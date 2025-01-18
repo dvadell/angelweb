@@ -61,6 +61,10 @@ config :logger, :console,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+config :angel, AngelWeb.MetricController,
+  graphite_host: {127,0,0,1},
+  graphite_port: 8125
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"

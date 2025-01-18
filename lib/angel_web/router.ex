@@ -20,10 +20,11 @@ defmodule AngelWeb.Router do
     get "/", PageController, :home
   end
 
-  # Other scopes may use custom stacks.
-  # scope "/api", AngelWeb do
-  #   pipe_through :api
-  # end
+  scope "/api/v1", AngelWeb do
+    pipe_through :api
+
+    post "/metric", MetricController, :create
+  end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:angel, :dev_routes) do
