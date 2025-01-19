@@ -1,0 +1,41 @@
+<.header>
+  Listing Graphs
+  <:actions>
+    <.link patch={~p"/graphs/new"}>
+      <.button>New Index</.button>
+    </.link>
+  </:actions>
+</.header>
+
+<.table
+  id="graphs"
+  rows={@streams.graphs}
+  row_click={fn {_id, index} -> JS.navigate(~p"/graphs/#{index}") end}
+>
+  <:col :let={{_id, index}} label="Short name">{index.short_name}</:col>
+  <:action :let={{_id, index}}>
+    <div class="sr-only">
+      <.link navigate={~p"/graphs/#{index}"}>Show</.link>
+    </div>
+    <.link patch={~p"/graphs/#{index}/edit"}>Edit</.link>
+  </:action>
+  <:action :let={{id, index}}>
+    <.link
+      phx-click={JS.push("delete", value: %{id: index.id}) |> hide("##{id}")}
+      data-confirm="Are you sure?"
+    >
+      Delete
+    </.link>
+  </:action>
+</.table>
+
+<.modal :if={@live_action in [:new, :edit]} id="index-modal" show on_cancel={JS.patch(~p"/graphs")}>
+  <.live_component
+    module={AngelWeb.IndexLive.FormComponent}
+    id={@index.id || :new}
+    title={@page_title}
+    action={@live_action}
+    index={@index}
+    patch={~p"/graphs"}
+  />
+</.modal>
