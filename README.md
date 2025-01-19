@@ -16,3 +16,5 @@ To test it with curl
   "reporter": "dummy_reporter"
 }'
 ```
+
+To "deploy" see https://dev.to/hlappa/development-environment-for-elixir-phoenix-with-docker-and-docker-compose-2g17
