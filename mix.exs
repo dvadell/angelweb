@@ -74,8 +74,8 @@ defmodule Angel.MixProject do
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
-      "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
-      "assets.build": ["tailwind angel", "esbuild angel"],
+      "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing", "cd assets && npm install"],
+      "assets.build": ["tailwind angel", "esbuild angel", "cd assets && npm run build"],
       "assets.deploy": [
         "tailwind angel --minify",
         "esbuild angel --minify",
