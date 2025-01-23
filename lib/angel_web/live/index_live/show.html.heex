@@ -1,26 +1,8 @@
-<.header>
-  Index {@index.id}
-  <:subtitle>This is a index record from your database.</:subtitle>
-  <:actions>
-    <.link patch={~p"/graphs/#{@index}/show/edit"} phx-click={JS.push_focus()}>
-      <.button>Edit index</.button>
-    </.link>
-  </:actions>
-</.header>
-
-<.list>
-  <:item title="Short name">{@index.short_name}</:item>
-</.list>
-
-<.back navigate={~p"/graphs"}>Back to graphs</.back>
-
-<.modal :if={@live_action == :edit} id="index-modal" show on_cancel={JS.patch(~p"/graphs/#{@index}")}>
-  <.live_component
-    module={AngelWeb.IndexLive.FormComponent}
-    id={@index.id}
-    title={@page_title}
-    action={@live_action}
-    index={@index}
-    patch={~p"/graphs/#{@index}"}
-  />
-</.modal>
+    <h1>Graphs</h1>
+    <script>
+    diego = <%= raw(@graph_data) %>;
+    window.addEventListener("DOMContentLoaded", () => {
+       renderChart(diego);
+    });
+    </script>
+    <canvas id="myChart"></canvas>

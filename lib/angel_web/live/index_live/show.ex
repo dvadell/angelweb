@@ -11,18 +11,4 @@ defmodule AngelWeb.IndexLive.Show do
     response = HTTPoison.get!(url)
     response.body
   end
-
-  @impl true
-  def render(assigns) do
-    ~H"""
-    <h1>Graphs</h1>
-    <script>
-    diego = <%= raw(@graph_data) %>;
-    window.addEventListener("DOMContentLoaded", () => {
-       renderChart(diego);
-    });
-    </script>
-    <canvas id="myChart"></canvas>
-    """
-  end
 end
