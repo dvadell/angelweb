@@ -49,15 +49,15 @@ window.liveSocket = liveSocket
 // See also https://medium.com/@lionel.aimerie/integrating-chart-js-into-elixir-phoenix-for-visual-impact-9a3991f0690f
 Chart.register(zoomPlugin);
 
-window.addEventListener("DOMContentLoaded", () => {
-  fetchGraphData("stats.gauges.jr.load_avg");
-});
+//window.addEventListener("DOMContentLoaded", () => {
+//  fetchGraphData("stats.gauges.jr.load_avg");
+//});
 
-function fetchGraphData(graph_name) {
-  fetch('http://localhost:80/render?target=' + graph_name + '&from=-24hours&format=json')
-    .then(response => response.json())
-    .then(data => renderChart(data));
-}
+//function fetchGraphData(graph_name) {
+//  fetch('http://localhost:80/render?target=' + graph_name + '&from=-24hours&format=json')
+//    .then(response => response.json())
+//    .then(data => renderChart(data));
+//}
 
 // data looks like this:
 // data[0].datapoints is an array of 1440 arrays [value, timestamp]
@@ -70,7 +70,7 @@ function renderChart(data) {
     data: {
       labels: data[0].datapoints.map( item => item[1] * 1000), // need miliseconds
       datasets: [{
-        label: 'Load Average (mordor)',
+        label: data[0].tags.name,
         data: data[0].datapoints.map( item => item[0])
       }]
     },
@@ -92,7 +92,6 @@ function renderChart(data) {
   });
 }
 
-console.log("before exporting");
-window.fetchGraphData = fetchGraphData;
+console.log("Exporting renderChart");
 window.renderChart = renderChart;
-console.log("after exporting");
+

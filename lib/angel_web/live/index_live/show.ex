@@ -1,21 +1,28 @@
 defmodule AngelWeb.IndexLive.Show do
   use AngelWeb, :live_view
 
-  alias Angel.Graphs
-
   @impl true
-  def mount(_params, _session, socket) do
-    {:ok, socket}
+  def mount(%{"id" => graph_name}, _session, socket) do
+    {:ok, assign(socket, :graph_data, fetch_graph_data(graph_name))}
+  end
+
+  defp fetch_graph_data(graph_name) do
+    url = "http://localhost:80/render?target=#{graph_name}&from=-24hours&format=json"
+    response = HTTPoison.get!(url)
+    response.body
   end
 
   @impl true
-  def handle_params(%{"id" => id}, _, socket) do
-    {:noreply,
-     socket
-     |> assign(:page_title, page_title(socket.assigns.live_action))
-     |> assign(:index, Graphs.get_index!(id))}
+  def render(assigns) do
+    ~H"""
+    <h1>Graphs</h1>
+    <script>
+    diego = <%= raw(@graph_data) %>;
+    window.addEventListener("DOMContentLoaded", () => {
+       renderChart(diego);
+    });
+    </script>
+    <canvas id="myChart"></canvas>
+    """
   end
-
-  defp page_title(:show), do: "Show Index"
-  defp page_title(:edit), do: "Edit Index"
 end
