@@ -18,9 +18,11 @@ defmodule AngelWeb.MetricController do
   end
 
   defp send_to_graphite(short_name, graph_value, type) do
-    conf = Application.get_env(:angel, AngelWeb.MetricController)
-    graphite_host = conf[:graphite_host] || {127,0,0,1}
-    graphite_port = conf[:graphite_port] || 8125
+    conf = Application.get_env(:angel, AngelWeb.MetricController, [graphite_host: "localhost", graphite_port: 8125] )
+
+    # Erlang's UDP socket needs hostname as charlist.
+    graphite_host = conf[:graphite_host] |> Kernel.to_charlist
+    graphite_port = conf[:graphite_port]
 
     message = "jr.#{short_name}:#{graph_value}|#{type}"
 

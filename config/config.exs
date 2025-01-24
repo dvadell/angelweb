@@ -62,7 +62,7 @@ config :logger, :console,
 config :phoenix, :json_library, Jason
 
 config :angel, AngelWeb.MetricController,
-  graphite_host: {127,0,0,1},
+  graphite_host: "localhost",
   graphite_port: 8125
 
 # Import environment specific config. This must remain at the bottom
