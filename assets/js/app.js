@@ -21,6 +21,9 @@ import "phoenix_html"
 import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
+import Chart from 'chart.js/auto';
+import zoomPlugin from 'chartjs-plugin-zoom';
+import 'chartjs-scale-timestack';
 
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {
@@ -41,4 +44,43 @@ liveSocket.connect()
 // >> liveSocket.enableLatencySim(1000)  // enabled for duration of browser session
 // >> liveSocket.disableLatencySim()
 window.liveSocket = liveSocket
+
+// See also https://medium.com/@lionel.aimerie/integrating-chart-js-into-elixir-phoenix-for-visual-impact-9a3991f0690f
+Chart.register(zoomPlugin);
+
+// data looks like this:
+// data[0].datapoints is an array of 1440 arrays [value, timestamp]
+function renderChart(data) {
+  window.data = data;
+  console.log(data);
+  const ctx = document.getElementById('myChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: data[0].datapoints.map( item => item[1] * 1000), // need miliseconds
+      datasets: [{
+        label: data[0].tags.name,
+        data: data[0].datapoints.map( item => item[0])
+      }]
+    },
+    options: {
+      scales: {
+        x: { type: 'timestack' },
+      },
+      plugins: {
+        zoom: {
+          zoom: {
+            wheel: { enabled: true },
+            pinch: { enabled: true },
+            mode: 'x'
+          },
+          pan: { enabled: true }
+        }
+      }
+    },
+  });
+}
+
+console.log("Exporting renderChart");
+window.renderChart = renderChart;
 

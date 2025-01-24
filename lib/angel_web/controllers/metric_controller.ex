@@ -18,8 +18,9 @@ defmodule AngelWeb.MetricController do
   end
 
   defp send_to_graphite(short_name, graph_value, type) do
-    graphite_host = Application.get_env(:angel, :graphite_host) || {127,0,0,1}
-    graphite_port = Application.get_env(:angel, :graphite_port) || 8125
+    conf = Application.get_env(:angel, AngelWeb.MetricController)
+    graphite_host = conf[:graphite_host] || {127,0,0,1}
+    graphite_port = conf[:graphite_port] || 8125
 
     message = "jr.#{short_name}:#{graph_value}|#{type}"
 

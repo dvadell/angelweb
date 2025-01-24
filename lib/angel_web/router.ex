@@ -18,6 +18,12 @@ defmodule AngelWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+    live "/graphs", IndexLive.Index, :index
+    live "/graphs/new", IndexLive.Index, :new
+    live "/graphs/:id/edit", IndexLive.Index, :edit
+
+    live "/graphs/:id", IndexLive.Show, :show
+    live "/graphs/:id/show/edit", IndexLive.Show, :edit
   end
 
   scope "/api/v1", AngelWeb do

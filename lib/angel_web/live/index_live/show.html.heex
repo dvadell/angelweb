@@ -1,0 +1,8 @@
+    <h1>Graphs</h1>
+    <script>
+    diego = <%= raw(@graph_data) %>;
+    window.addEventListener("DOMContentLoaded", () => {
+       renderChart(diego);
+    });
+    </script>
+    <canvas id="myChart"></canvas>
