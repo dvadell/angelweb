@@ -3,7 +3,7 @@
     <%= Enum.map(@graphs, fn g -> %>
     <li>
       <a href={"/graphs/#{Map.get(g, "id")}"}>
-        <%= Map.get(g, "id") %>
+        <%= Map.get(g, "id") |> String.replace("stats.gauges.jr.", "") %>
       </a>
     </li>
     <% end) %>
