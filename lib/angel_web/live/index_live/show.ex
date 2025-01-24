@@ -7,7 +7,10 @@ defmodule AngelWeb.IndexLive.Show do
   end
 
   defp fetch_graph_data(graph_name) do
-    url = "http://localhost:80/render?target=#{graph_name}&from=-24hours&format=json"
+    conf = Application.get_env(:angel, AngelWeb.MetricController)
+    graphite_host = conf[:graphite_host] || {127,0,0,1}
+
+    url = "http://#{graphite_host}/render?target=#{graph_name}&from=-24hours&format=json"
     response = HTTPoison.get!(url)
     response.body
   end
