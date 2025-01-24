@@ -23,7 +23,6 @@ import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
 import Chart from 'chart.js/auto';
 import zoomPlugin from 'chartjs-plugin-zoom';
-//import 'chartjs-adapter-date-fns';
 import 'chartjs-scale-timestack';
 
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
@@ -48,16 +47,6 @@ window.liveSocket = liveSocket
 
 // See also https://medium.com/@lionel.aimerie/integrating-chart-js-into-elixir-phoenix-for-visual-impact-9a3991f0690f
 Chart.register(zoomPlugin);
-
-//window.addEventListener("DOMContentLoaded", () => {
-//  fetchGraphData("stats.gauges.jr.load_avg");
-//});
-
-//function fetchGraphData(graph_name) {
-//  fetch('http://localhost:80/render?target=' + graph_name + '&from=-24hours&format=json')
-//    .then(response => response.json())
-//    .then(data => renderChart(data));
-//}
 
 // data looks like this:
 // data[0].datapoints is an array of 1440 arrays [value, timestamp]
