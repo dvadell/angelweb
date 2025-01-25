@@ -1,0 +1,3 @@
+[submodule "graphite"]
+	path = graphite
+	url = https://github.com/graphite-project/docker-graphite-statsd/
