@@ -20,7 +20,8 @@ config :angel, AngelWeb.Endpoint,
     layout: false
   ],
   pubsub_server: Angel.PubSub,
-  live_view: [signing_salt: "9sNOeGFZ"]
+  live_view: [signing_salt: "9sNOeGFZ"],
+  check_origin: [System.fetch_env!("FRONTEND_URL")]
 
 # Configures the mailer
 #
