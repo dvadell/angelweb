@@ -1,7 +1,10 @@
 defmodule AngelWeb.MetricController do
   use AngelWeb, :controller
+  alias Angel.Events
 
-  def create(conn, metric_params) do
+  def create(conn, metric_params = %{"short_name" => short_name, "graph_value" => graph_value}) do
+    Events.create_event( %{for_graph: "jr.#{short_name}", text: "Value: #{graph_value}"} )
+
     with changeset <- AngelWeb.Schemas.Metric.changeset(%AngelWeb.Schemas.Metric{}, metric_params),
          true <- changeset.valid?,
          %{short_name: short_name, graph_value: graph_value, type: type} <- Ecto.Changeset.apply_changes(changeset) do
