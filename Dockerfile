@@ -1,4 +1,4 @@
-FROM hexpm/elixir:1.18.2-erlang-27.2.1-debian-buster-20240612
+FROM hexpm/elixir:1.18.4-erlang-25.1.2.1-ubuntu-jammy-20250619
 
 WORKDIR /app
 
