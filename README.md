@@ -17,4 +17,27 @@ To test it with curl
 }'
 ```
 
+## API Endpoints
+
+This project exposes two main API endpoints:
+
+### `POST /api/v1/metric`
+
+*   **Description**: This endpoint is used for receiving and storing metric measurements.
+*   **Method**: `POST`
+*   **Content-Type**: `application/json`
+*   **Request Body Example**:
+    ```json
+    {
+      "short_name": "example_metric",
+      "graph_value": 43,
+      "reporter": "dummy_reporter"
+    }
+    ```
+
+### `GET /graphs`
+
+*   **Description**: This endpoint is used for displaying the stored metric graphs. It provides a visual representation of the collected data.
+*   **Method**: `GET`
+
 To "deploy" see https://dev.to/hlappa/development-environment-for-elixir-phoenix-with-docker-and-docker-compose-2g17
