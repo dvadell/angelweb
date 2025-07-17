@@ -111,11 +111,7 @@ defmodule Angel.Graphs do
       nil ->
         create_index(attrs)
       graph ->
-        if attrs["units"] do
-          update_index(graph, attrs)
-        else
-          {:ok, graph}
-        end
+        update_index(graph, attrs)
     end
   end
 end

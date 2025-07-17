@@ -1,14 +1,53 @@
 defmodule AngelWeb.IndexLive.Show do
   use AngelWeb, :live_view
+  alias Angel.Graphs
 
   @impl true
   def mount(%{"id" => graph_name}, _session, socket) do
     shorter_graph_name = graph_name |> String.replace("stats.gauges.", "")
+    graph = Graphs.get_by_short_name(shorter_graph_name) || %Angel.Graphs.Index{short_name: shorter_graph_name, title: "", notes: ""}
+
+    # Create the form changeset
+    changeset = Angel.Graphs.Index.changeset(graph, %{})
+
     {:ok, 
       assign(socket, :graph_data, fetch_graph_data(graph_name))
       |> assign(:events, Angel.Events.for_graph(shorter_graph_name) )
       |> assign(:graph_name, shorter_graph_name)
+      |> assign(:graph, graph)
+      |> assign(:form, to_form(changeset))
     }
+  end
+
+  @impl true
+  def handle_event("validate", %{"index" => graph_params}, socket) do
+    changeset = 
+      socket.assigns.graph
+      |> Angel.Graphs.Index.changeset(graph_params)
+      |> Map.put(:action, :validate)
+    
+    {:noreply, assign(socket, :form, to_form(changeset))}
+  end
+
+  @impl true
+  def handle_event("save", %{"index" => graph_params}, socket) do
+    # Add the short_name to the params since it's needed for save
+    graph_params = Map.put(graph_params, "short_name", socket.assigns.graph_name)
+    
+    case Graphs.create_or_update_graph(graph_params) do
+      {:ok, graph} ->
+        # Update both the graph and create a new clean form
+        changeset = Angel.Graphs.Index.changeset(graph, graph_params)
+        {:noreply, 
+         socket
+         |> assign(:graph, graph)
+         |> assign(:form, to_form(changeset))
+         |> put_flash(:info, "Graph saved successfully!")
+        }
+      {:error, changeset} ->
+        # Show validation errors in the form
+        {:noreply, assign(socket, :form, to_form(changeset))}
+    end
   end
 
   defp fetch_graph_data(graph_name) do

@@ -1,4 +1,47 @@
-    <h1 class="text-4xl font-bold text-gray-800 mb-4"> Graphs </h1>
+<.form
+  for={@form}
+  id="graph-form"
+  phx-change="validate"
+  phx-submit="save"
+>
+  <div class="flex flex-col gap-4">
+    <div class="flex flex-col gap-2">
+      <.label for={@form[:title].id}>
+        Title
+      </.label>
+      <.input
+        field={@form[:title]}
+        type="text"
+        placeholder="Graph Title"
+        class="border border-gray-300 rounded-md p-2"
+      />
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <.label for={@form[:notes].id}>
+        Notes
+      </.label>
+      <.input
+        field={@form[:notes]}
+        type="textarea"
+        placeholder="Notes about the graph"
+        class="border border-gray-300 rounded-md p-2 h-32"
+      />
+    </div>
+
+    <div class="flex justify-end">
+      <.button
+        type="submit"
+        phx-disable-with="Saving..."
+        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+      >
+        Save
+      </.button>
+    </div>
+  </div>
+</.form>
+
+    <h1 class="text-4xl font-bold text-gray-800 mb-4"> Graph for <%= @graph.title %> </h1>
     <script>
     diego = <%= raw(@graph_data) %>;
     window.addEventListener("DOMContentLoaded", () => {
