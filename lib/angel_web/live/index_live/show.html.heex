@@ -10,7 +10,7 @@
     <h1 class="text-4xl font-bold text-gray-800 mb-4"> Events for <%= @graph_name %> </h1>
     <ul>
     <%= Enum.map(@events, fn e -> %>
-    <li> <%= Map.get(e, :inserted_at) %> : <%= Map.get(e, :text) %>
+    <li> <%= Map.get(e, :inserted_at) %> : <%= Map.get(e, :text) %>  <%= Map.get(e, :units) %>
     </li>
     <% end) %>
     </ul>

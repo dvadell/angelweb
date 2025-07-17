@@ -1,17 +1,21 @@
 defmodule AngelWeb.MetricController do
   use AngelWeb, :controller
   alias Angel.Events
+  alias Angel.Graphs
 
   def create(conn, metric_params = %{"short_name" => short_name, "graph_value" => graph_value}) do
-    Events.create_event( %{for_graph: "jr.#{short_name}", text: "Value: #{graph_value}"} )
-
     with changeset <- AngelWeb.Schemas.Metric.changeset(%AngelWeb.Schemas.Metric{}, metric_params),
          true <- changeset.valid?,
-         %{short_name: short_name, graph_value: graph_value, type: type} <- Ecto.Changeset.apply_changes(changeset) do
-        send_to_graphite(short_name, graph_value, type)
-        conn
-        |> put_status(:created)
-        |> json(%{message: "Data sent to Graphite"})
+         metric <- Ecto.Changeset.apply_changes(changeset) do
+
+      {:ok, graph} = Graphs.create_or_update_graph(metric_params)
+
+      Events.create_event( %{for_graph: "jr.#{short_name}", text: "Value: #{graph_value} #{graph.units}"} )
+
+      send_to_graphite(metric.short_name, metric.graph_value, metric.type)
+      conn
+      |> put_status(:created)
+      |> json(%{message: "Data sent to Graphite"})
     else
       _ ->
         conn

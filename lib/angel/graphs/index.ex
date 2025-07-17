@@ -4,6 +4,7 @@ defmodule Angel.Graphs.Index do
 
   schema "graphs" do
     field :short_name, :string
+    field :units, :string
 
     timestamps(type: :utc_datetime)
   end
@@ -11,7 +12,7 @@ defmodule Angel.Graphs.Index do
   @doc false
   def changeset(index, attrs) do
     index
-    |> cast(attrs, [:short_name])
+    |> cast(attrs, [:short_name, :units])
     |> validate_required([:short_name])
   end
 end

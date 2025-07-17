@@ -37,6 +37,10 @@ defmodule Angel.Graphs do
   """
   def get_index!(id), do: Repo.get!(Index, id)
 
+  def get_by_short_name(short_name) do
+    Repo.get_by(Index, short_name: short_name)
+  end
+
   @doc """
   Creates a index.
 
@@ -100,5 +104,18 @@ defmodule Angel.Graphs do
   """
   def change_index(%Index{} = index, attrs \\ %{}) do
     Index.changeset(index, attrs)
+  end
+
+  def create_or_update_graph(attrs) do
+    case Repo.get_by(Index, short_name: attrs["short_name"]) do
+      nil ->
+        create_index(attrs)
+      graph ->
+        if attrs["units"] do
+          update_index(graph, attrs)
+        else
+          {:ok, graph}
+        end
+    end
   end
 end
