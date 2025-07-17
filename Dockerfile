@@ -11,5 +11,5 @@ RUN apt update
 RUN apt install -y npm
 RUN apt install -y git
 
-CMD mix deps.get; mix ecto.migrate && mix assets.setup && mix deps.get && mix phx.server
+CMD rm -rf _build/* deps/* && mix deps.get; mix ecto.migrate && mix assets.setup && mix deps.get && mix phx.server
 
