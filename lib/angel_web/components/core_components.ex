@@ -18,6 +18,7 @@ defmodule AngelWeb.CoreComponents do
 
   alias Phoenix.LiveView.JS
   import AngelWeb.Gettext
+  import Phoenix.HTML
 
   @doc """
   Renders a modal.
@@ -672,5 +673,13 @@ defmodule AngelWeb.CoreComponents do
   """
   def translate_errors(errors, field) when is_list(errors) do
     for {^field, {msg, opts}} <- errors, do: translate_error({msg, opts})
+  end
+
+  attr :content, :string, required: true, doc: "The markdown content to render."
+
+  def markdown(assigns) do
+    ~H"""
+    <%= raw Earmark.as_html!(@content) %>
+    """
   end
 end

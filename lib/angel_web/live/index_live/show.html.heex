@@ -81,6 +81,8 @@
 
     <h1 phx-click="toggle_notes" class="text-4xl font-bold text-gray-800 mb-4 cursor-pointer"><span class="mr-2"><%= if @show_notes, do: "▼", else: "▶" %></span>Notes</h1>
     <%= if @show_notes do %>
-      <p><%= @graph.notes %></p>
+      <div class="prose">
+        <.markdown content={@graph.notes} />
+      </div>
     <% end %>
     
