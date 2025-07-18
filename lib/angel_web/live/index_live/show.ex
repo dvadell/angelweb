@@ -10,12 +10,16 @@ defmodule AngelWeb.IndexLive.Show do
     # Create the form changeset
     changeset = Angel.Graphs.Index.changeset(graph, %{})
 
-    {:ok, 
-      assign(socket, :graph_data, fetch_graph_data(graph_name))
-      |> assign(:events, Angel.Events.for_graph(shorter_graph_name) )
+    {:ok,
+      socket
+      |> assign(:graph_data, fetch_graph_data(graph_name))
+      |> assign(:events, Angel.Events.for_graph(shorter_graph_name))
       |> assign(:graph_name, shorter_graph_name)
       |> assign(:graph, graph)
       |> assign(:form, to_form(changeset))
+      |> assign(:show_form, false)
+      |> assign(:show_events, false)
+      |> assign(:show_notes, false)
     }
   end
 
@@ -27,6 +31,21 @@ defmodule AngelWeb.IndexLive.Show do
       |> Map.put(:action, :validate)
     
     {:noreply, assign(socket, :form, to_form(changeset))}
+  end
+
+  @impl true
+  def handle_event("toggle_form", _, socket) do
+    {:noreply, assign(socket, :show_form, not socket.assigns.show_form)}
+  end
+
+  @impl true
+  def handle_event("toggle_events", _, socket) do
+    {:noreply, assign(socket, :show_events, not socket.assigns.show_events)}
+  end
+
+  @impl true
+  def handle_event("toggle_notes", _, socket) do
+    {:noreply, assign(socket, :show_notes, not socket.assigns.show_notes)}
   end
 
   @impl true
@@ -42,6 +61,7 @@ defmodule AngelWeb.IndexLive.Show do
          socket
          |> assign(:graph, graph)
          |> assign(:form, to_form(changeset))
+         |> assign(:show_form, false)
          |> put_flash(:info, "Graph saved successfully!")
         }
       {:error, changeset} ->

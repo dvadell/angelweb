@@ -1,60 +1,86 @@
-<.form
-  for={@form}
-  id="graph-form"
-  phx-change="validate"
-  phx-submit="save"
->
-  <div class="flex flex-col gap-4">
-    <div class="flex flex-col gap-2">
-      <.label for={@form[:title].id}>
-        Title
-      </.label>
-      <.input
-        field={@form[:title]}
-        type="text"
-        placeholder="Graph Title"
-        class="border border-gray-300 rounded-md p-2"
-      />
-    </div>
 
-    <div class="flex flex-col gap-2">
-      <.label for={@form[:notes].id}>
-        Notes
-      </.label>
-      <.input
-        field={@form[:notes]}
-        type="textarea"
-        placeholder="Notes about the graph"
-        class="border border-gray-300 rounded-md p-2 h-32"
-      />
-    </div>
+<%= if @show_form do %>
+  <div id="graph-form-container">
+    <.form
+      for={@form}
+      id="graph-form"
+      phx-change="validate"
+      phx-submit="save"
+    >
+      <div class="flex flex-col gap-4">
+        <div class="flex flex-col gap-2">
+          <.label for={@form[:title].id}>
+            Title
+          </.label>
+          <.input
+            field={@form[:title]}
+            type="text"
+            placeholder="Graph Title"
+            class="border border-gray-300 rounded-md p-2"
+          />
+        </div>
 
-    <div class="flex justify-end">
-      <.button
-        type="submit"
-        phx-disable-with="Saving..."
-        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-      >
-        Save
-      </.button>
-    </div>
+        <div class="flex flex-col gap-2">
+          <.label for={@form[:notes].id}>
+            Notes
+          </.label>
+          <.input
+            field={@form[:notes]}
+            type="textarea"
+            placeholder="Notes about the graph"
+            class="border border-gray-300 rounded-md p-2 h-32"
+          />
+        </div>
+
+        <div class="flex justify-end gap-4">
+          <.button
+            type="button"
+            phx-click="toggle_form"
+            class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded"
+          >
+            Cancel
+          </.button>
+          <.button
+            type="submit"
+            phx-disable-with="Saving..."
+            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          >
+            Save
+          </.button>
+        </div>
+      </div>
+    </.form>
   </div>
-</.form>
+<% else %>
+  <div class="flex items-center mb-4">
+    <h1 class="text-4xl font-bold text-gray-800"><%= @graph.title %></h1>
+    <button phx-click="toggle_form" class="ml-4">
+      <.icon name="hero-pencil-solid" class="w-6 h-6 text-gray-500 hover:text-gray-700" />
+    </button>
+  </div>
+<% end %>
+    <div id="chart-container" phx-update="ignore">
+      <script>
+      diego = <%= raw(@graph_data) %>;
+      window.addEventListener("DOMContentLoaded", () => {
+         renderChart(diego);
+      });
+      </script>
+      <canvas id="myChart"></canvas>
+    </div>
 
-    <h1 class="text-4xl font-bold text-gray-800 mb-4"> Graph for <%= @graph.title %> </h1>
-    <script>
-    diego = <%= raw(@graph_data) %>;
-    window.addEventListener("DOMContentLoaded", () => {
-       renderChart(diego);
-    });
-    </script>
-    <canvas id="myChart"></canvas>
+    <h1 phx-click="toggle_events" class="text-4xl font-bold text-gray-800 mb-4 cursor-pointer"><span class="mr-2"><%= if @show_events, do: "▼", else: "▶" %></span>Events</h1>
+    <%= if @show_events do %>
+      <ul>
+      <%= Enum.map(@events, fn e -> %>
+      <li> <%= Map.get(e, :inserted_at) %> : <%= Map.get(e, :text) %>  <%= Map.get(e, :units) %>
+      </li>
+      <% end) %>
+      </ul>
+    <% end %>
 
-    <h1 class="text-4xl font-bold text-gray-800 mb-4"> Events for <%= @graph_name %> </h1>
-    <ul>
-    <%= Enum.map(@events, fn e -> %>
-    <li> <%= Map.get(e, :inserted_at) %> : <%= Map.get(e, :text) %>  <%= Map.get(e, :units) %>
-    </li>
-    <% end) %>
-    </ul>
+    <h1 phx-click="toggle_notes" class="text-4xl font-bold text-gray-800 mb-4 cursor-pointer"><span class="mr-2"><%= if @show_notes, do: "▼", else: "▶" %></span>Notes</h1>
+    <%= if @show_notes do %>
+      <p><%= @graph.notes %></p>
+    <% end %>
     
