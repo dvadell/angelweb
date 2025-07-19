@@ -5,10 +5,14 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_USER: postgres
       POSTGRES_HOST_AUTH_METHOD: trust
-    image: 'postgres:17-alpine'
+    image: 'timescale/timescaledb:latest-pg17'
     restart: unless-stopped
     volumes:
-      - 'pgdata:/var/lib/postgresql/data'
+      - 'timescaledb:/var/lib/postgresql/data'
+  # To debug, run: 
+  #   docker compose down web
+  #   docker compose run --service-ports web /bin/bash
+  #   iex --dbg pry -S mix phx.server
   web:
     build: .
     depends_on:
@@ -32,4 +36,5 @@ services:
     - ./graphite/conf/opt/graphite/storage:/opt/graphite/storage
 volumes:
   pgdata:
+  timescaledb:
 
