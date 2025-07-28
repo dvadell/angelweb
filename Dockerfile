@@ -10,6 +10,7 @@ RUN mix local.hex --force
 RUN apt update
 RUN apt install -y npm
 RUN apt install -y git
+RUN apt install -y postgresql-client
 
 CMD rm -rf _build/* deps/* && mix deps.get; mix ecto.migrate && mix assets.setup && mix deps.get && mix phx.server
 
