@@ -21,6 +21,8 @@ The `graphs` table stores information about the graphs that can be displayed.
 |            |                 |  (e.g., "backup_time").                   |
 | units      | string          | The units for the values being graphed    |
 |            |                 | (e.g., "seconds", "requests/second").     |
+| title      | string          | The title of the graph.                   |
+| notes      | string          | Notes about the graph.                    |
 | inserted_at| utc_datetime    | Timestamp of when the record was created. |
 | updated_at | utc_datetime    | Timestamp of when the record was last     |
 |            |                 |                                  updated. |
