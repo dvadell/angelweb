@@ -18,6 +18,7 @@ services:
     env_file:
       - .env
     ports:
+      - '11000:4000'
       - '8012:4000'
     volumes:
       - .:/app
