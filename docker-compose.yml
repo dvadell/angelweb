@@ -1,4 +1,5 @@
 services:
+  # docker compose exec db psql --user postgres angel
   db:
     environment:
       PGDATA: /var/lib/postgresql/data/pgdata

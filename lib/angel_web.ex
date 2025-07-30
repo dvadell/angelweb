@@ -54,6 +54,7 @@ defmodule AngelWeb do
       use Phoenix.LiveView,
         layout: {AngelWeb.Layouts, :app}
 
+      import Phoenix.LiveView.Router
       unquote(html_helpers())
     end
   end

@@ -57,9 +57,9 @@ function renderChart(data) {
   new Chart(ctx, {
     type: 'line',
     data: {
-      labels: data[0].datapoints.map( item => item[1] * 1000), // need miliseconds
+      labels: data[0].datapoints.map( item => item[1]), // timestamps are already in milliseconds
       datasets: [{
-        label: data[0].tags.name,
+        label: data[0].target,
         data: data[0].datapoints.map( item => item[0])
       }]
     },
