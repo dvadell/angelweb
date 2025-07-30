@@ -27,6 +27,8 @@ services:
       - '8012:4000'
     volumes:
       - .:/app
+      - /app/_build
+      - /app/deps
   graphite:
    build:
     context: ./graphite

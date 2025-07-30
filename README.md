@@ -18,6 +18,13 @@ To test it with curl
 }'
 ```
 
+## Running tests
+```
+docker compose run web /bin/bash
+MIX_ENV=test mix reset
+MIX_ENV=test mix test
+```
+
 ## API Endpoints
 
 This project exposes two main API endpoints:
