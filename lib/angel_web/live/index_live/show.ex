@@ -11,18 +11,8 @@ defmodule AngelWeb.IndexLive.Show do
     # Create the form changeset
     changeset = Angel.Graphs.Index.changeset(graph, %{})
 
-    end_time = DateTime.utc_now()
-    start_time = DateTime.add(end_time, -86_400, :second) # 24 hours
-
-    data = 
-      case Angel.Graphs.fetch_timescaledb_data(shorter_graph_name, start_time, end_time) do
-        {:ok, data} -> data
-        _other -> [%{ datapoints: [] }]
-      end
-
     {:ok,
       socket
-      |> assign(:graph_data, Jason.encode!(data) )
       |> assign(:events, Angel.Events.for_graph(shorter_graph_name))
       |> assign(:graph_name, shorter_graph_name)
       |> assign(:graph, graph)
@@ -31,6 +21,23 @@ defmodule AngelWeb.IndexLive.Show do
       |> assign(:show_events, false)
       |> assign(:show_notes, false)
     }
+  end
+
+  @impl true
+  def handle_event("get_initial_data", _params, socket) do
+    graph_name = socket.assigns.graph_name
+    
+    end_time = DateTime.utc_now()
+    start_time = DateTime.add(end_time, -86_400, :second) # 24 hours
+
+    case Angel.Graphs.fetch_timescaledb_data(graph_name, start_time, end_time) do
+      {:ok, data} ->
+        {:noreply, push_event(socket, "chart:data_loaded", %{data: data})}
+      {:error, _e} ->
+        # Send empty data structure on error
+        empty_data = [%{datapoints: [], target: graph_name}]
+        {:noreply, push_event(socket, "chart:data_loaded", %{data: empty_data})}
+    end
   end
 
   @impl true
@@ -94,6 +101,69 @@ defmodule AngelWeb.IndexLive.Show do
       end
     else
       _error ->
+        {:noreply, socket}
+    end
+  end
+
+  # Handle pan/zoom events from the chart
+  @impl true
+  def handle_event("chart_zoomed", %{"visible_range" => %{"min" => min_ms, "max" => max_ms}, "zoom_level" => level}, socket) do
+    IO.inspect("CHART_ZOOMED")
+    # Convert milliseconds to DateTime
+    min_time = DateTime.from_unix!(trunc(min_ms), :millisecond)
+    max_time = DateTime.from_unix!(trunc(max_ms), :millisecond)
+    
+    IO.inspect(%{min: min_time, max: max_time, zoom: level}, label: "Chart zoomed")
+    
+    # If zoomed in significantly (showing less than 6 hours), load higher resolution data
+    time_span_hours = DateTime.diff(max_time, min_time, :hour)
+    
+    if time_span_hours < 6 do
+      IO.inspect(time_span_hours, label: "Zoomed in significantly, loading detailed data for hours")
+      
+      # Add small buffer for zoomed data
+      buffer_seconds = 300 # 5 minutes buffer
+      expanded_min = DateTime.add(min_time, -buffer_seconds, :second)
+      expanded_max = DateTime.add(max_time, buffer_seconds, :second)
+      
+      graph_name = socket.assigns.graph_name
+      
+      case Angel.Graphs.fetch_timescaledb_data(graph_name, expanded_min, expanded_max) do
+        {:ok, new_data} ->
+          IO.inspect(length(new_data[0].datapoints), label: "High-res data points loaded")
+          {:noreply, push_event(socket, "chart:data_loaded", %{data: new_data})}
+        {:error, error} ->
+          IO.inspect(error, label: "Error loading zoomed data")
+          {:noreply, socket}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("chart_panned", %{"visible_range" => %{"min" => min_ms, "max" => max_ms}}, socket) do
+    IO.inspect("CHART_PANNED")
+    # Convert milliseconds to DateTime
+    min_time = DateTime.from_unix!(trunc(min_ms), :millisecond)
+    max_time = DateTime.from_unix!(trunc(max_ms), :millisecond)
+    
+    # Add some buffer around the visible range to preload data
+    buffer_seconds = 3600 # 1 hour buffer on each side
+    expanded_min = DateTime.add(min_time, -buffer_seconds, :second)
+    expanded_max = DateTime.add(max_time, buffer_seconds, :second)
+    
+    IO.inspect(%{min: min_time, max: max_time}, label: "Visible range")
+    IO.inspect(%{min: expanded_min, max: expanded_max}, label: "Loading range with buffer")
+    
+    graph_name = socket.assigns.graph_name
+    
+    case Angel.Graphs.fetch_timescaledb_data(graph_name, expanded_min, expanded_max) do
+      {:ok, new_data} ->
+        IO.inspect(new_data, label: "Data points loaded")
+        {:noreply, push_event(socket, "chart:data_loaded", %{data: new_data})}
+      {:error, error} ->
+        IO.inspect(error, label: "Error loading panned data")
         {:noreply, socket}
     end
   end

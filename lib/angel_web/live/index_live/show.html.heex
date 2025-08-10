@@ -60,13 +60,7 @@
   </div>
 <% end %>
     <div id="chart-container" phx-update="ignore">
-      <script>
-      diego = <%= raw(@graph_data) %>;
-      window.addEventListener("DOMContentLoaded", () => {
-         renderChart(diego);
-      });
-      </script>
-      <canvas id="myChart"></canvas>
+      <canvas phx-hook="Chart" id="myChart"></canvas>
     </div>
 
     <h1 phx-click="toggle_events" class="text-4xl font-bold text-gray-800 mb-4 cursor-pointer"><span class="mr-2"><%= if @show_events, do: "▼", else: "▶" %></span>Events</h1>
