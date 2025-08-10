@@ -1,7 +1,7 @@
 defmodule AngelWeb.IndexLive.Show do
   use AngelWeb, :live_view
   alias Angel.Graphs
-  alias Angel.Repo
+  alias Jason
 
   @impl true
   def mount(%{"id" => graph_name}, _session, socket) do
@@ -11,9 +11,18 @@ defmodule AngelWeb.IndexLive.Show do
     # Create the form changeset
     changeset = Angel.Graphs.Index.changeset(graph, %{})
 
+    end_time = DateTime.utc_now()
+    start_time = DateTime.add(end_time, -86_400, :second) # 24 hours
+
+    data = 
+      case Angel.Graphs.fetch_timescaledb_data(shorter_graph_name, start_time, end_time) do
+        {:ok, data} -> data
+        _other -> [%{ datapoints: [] }]
+      end
+
     {:ok,
       socket
-      |> assign(:graph_data, fetch_timescaledb_data(shorter_graph_name))
+      |> assign(:graph_data, Jason.encode!(data) )
       |> assign(:events, Angel.Events.for_graph(shorter_graph_name))
       |> assign(:graph_name, shorter_graph_name)
       |> assign(:graph, graph)
@@ -71,30 +80,21 @@ defmodule AngelWeb.IndexLive.Show do
     end
   end
 
-  def fetch_timescaledb_data(graph_name_with_prefix) do
-    # The name in the metrics table likely has the "jr." prefix, so we use it directly.
-    end_time = DateTime.utc_now()
-    start_time = DateTime.add(end_time, -86_400, :second) # 24 hours
+  @impl true
+  def handle_event("get_more_data", %{"start_time" => start_time_str, "end_time" => end_time_str}, socket) do
+    with {:ok, start_time, _} <- DateTime.from_iso8601(start_time_str),
+         {:ok, end_time, _} <- DateTime.from_iso8601(end_time_str) do
+      graph_name = socket.assigns.graph_name
 
-    query = "SELECT * FROM get_metrics($1, $2, $3);"
-
-    case Repo.query(query, ["jr." <> graph_name_with_prefix, start_time, end_time]) do
-      {:ok, %Postgrex.Result{rows: rows}} ->
-        datapoints = 
-          Enum.map(rows, fn [timestamp, avg_value, _max, _min] ->
-            # The JS graph wants milliseconds since epoch
-            unix_timestamp = DateTime.to_unix(timestamp, :millisecond)
-            # Handle nil values for avg_value, which can happen for empty time buckets.
-            value = if avg_value, do: Decimal.to_float(avg_value), else: nil
-            [value, unix_timestamp]
-          end)
-
-        result = [%{target: graph_name_with_prefix, datapoints: datapoints}]
-        Jason.encode!(result)
-
-      {:error, e} ->
-        IO.inspect(e, label: "Error fetching data from TimescaleDB")
-        Jason.encode!([%{target: graph_name_with_prefix, datapoints: []}])
+      case Angel.Graphs.fetch_timescaledb_data(graph_name, start_time, end_time) do
+        {:ok, new_data} ->
+          {:noreply, push_event(socket, "chart:data_loaded", %{data: new_data})}
+        {:error, _e} ->
+          {:noreply, socket}
+      end
+    else
+      _error ->
+        {:noreply, socket}
     end
   end
 end

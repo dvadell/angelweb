@@ -5,6 +5,7 @@ defmodule Angel.Graphs do
 
   import Ecto.Query, warn: false
   alias Angel.Repo
+  alias Decimal
 
   alias Angel.Graphs.Index
 
@@ -104,6 +105,29 @@ defmodule Angel.Graphs do
   """
   def change_index(%Index{} = index, attrs \\ %{}) do
     Index.changeset(index, attrs)
+  end
+
+  def fetch_timescaledb_data(graph_name_with_prefix, start_time, end_time) do
+    # The name in the metrics table likely has the "jr." prefix, so we use it directly.
+    query = "SELECT * FROM get_metrics($1, $2, $3);"
+
+    case Repo.query(query, ["jr." <> graph_name_with_prefix, start_time, end_time]) do
+      {:ok, %Postgrex.Result{rows: rows}} ->
+        datapoints =
+          Enum.map(rows, fn [timestamp, avg_value, _max, _min] ->
+            # The JS graph wants milliseconds since epoch
+            unix_timestamp = DateTime.to_unix(timestamp, :millisecond)
+            # Handle nil values for avg_value, which can happen for empty time buckets.
+            value = if avg_value, do: Decimal.to_float(avg_value), else: nil
+            [value, unix_timestamp]
+          end)
+
+        {:ok, [%{target: graph_name_with_prefix, datapoints: datapoints}]}
+
+      {:error, e} ->
+        IO.inspect(e, label: "Error fetching data from TimescaleDB")
+        {:error, e}
+    end
   end
 
   def create_or_update_graph(attrs) do

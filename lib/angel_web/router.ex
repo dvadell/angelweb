@@ -30,6 +30,7 @@ defmodule AngelWeb.Router do
     pipe_through :api
 
     post "/metric", MetricController, :create
+    get "/graphs/:name", MetricController, :show
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
