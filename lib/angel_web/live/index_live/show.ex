@@ -118,26 +118,22 @@ defmodule AngelWeb.IndexLive.Show do
     # If zoomed in significantly (showing less than 6 hours), load higher resolution data
     time_span_hours = DateTime.diff(max_time, min_time, :hour)
     
-    if time_span_hours < 6 do
-      IO.inspect(time_span_hours, label: "Zoomed in significantly, loading detailed data for hours")
+    IO.inspect(time_span_hours, label: "Zoomed in significantly, loading detailed data for hours")
       
-      # Add small buffer for zoomed data
-      buffer_seconds = 300 # 5 minutes buffer
-      expanded_min = DateTime.add(min_time, -buffer_seconds, :second)
-      expanded_max = DateTime.add(max_time, buffer_seconds, :second)
+    # Add small buffer for zoomed data
+    buffer_seconds = 300 # 5 minutes buffer
+    expanded_min = DateTime.add(min_time, -buffer_seconds, :second)
+    expanded_max = DateTime.add(max_time, buffer_seconds, :second)
       
-      graph_name = socket.assigns.graph_name
+    graph_name = socket.assigns.graph_name
       
-      case Angel.Graphs.fetch_timescaledb_data(graph_name, expanded_min, expanded_max) do
-        {:ok, new_data} ->
-          IO.inspect(length(new_data[0].datapoints), label: "High-res data points loaded")
-          {:noreply, push_event(socket, "chart:data_loaded", %{data: new_data})}
-        {:error, error} ->
-          IO.inspect(error, label: "Error loading zoomed data")
-          {:noreply, socket}
-      end
-    else
-      {:noreply, socket}
+    case Angel.Graphs.fetch_timescaledb_data(graph_name, expanded_min, expanded_max) do
+      {:ok, new_data} ->
+      IO.inspect(new_data, label: "Data points loaded")
+        {:noreply, push_event(socket, "chart:data_loaded", %{data: new_data})}
+      {:error, error} ->
+        IO.inspect(error, label: "Error loading zoomed data")
+        {:noreply, socket}
     end
   end
 
