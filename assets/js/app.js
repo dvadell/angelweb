@@ -148,6 +148,7 @@ let ChartHook = {
         }]
       },
       options: {
+        animation: false,
         scales: {
           x: { type: 'timestack' },
         },

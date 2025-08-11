@@ -29,15 +29,6 @@ services:
       - .:/app
       - /app/_build
       - /app/deps
-  graphite:
-   build:
-    context: ./graphite
-    dockerfile: Dockerfile
-    args:
-      python_binary: python3
-   volumes:
-    - ./graphite/conf/opt/graphite/conf:/opt/graphite/conf
-    - ./graphite/conf/opt/graphite/storage:/opt/graphite/storage
 volumes:
   pgdata:
   timescaledb:
