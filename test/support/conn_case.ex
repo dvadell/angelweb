@@ -29,6 +29,7 @@ defmodule AngelWeb.ConnCase do
       import Phoenix.ConnTest
       import AngelWeb.ConnCase
       import Mox
+      import Plug.Test
     end
   end
 

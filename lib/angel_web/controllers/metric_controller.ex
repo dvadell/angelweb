@@ -6,7 +6,9 @@ defmodule AngelWeb.MetricController do
   alias Jason
   alias DateTime
 
-  def create(conn, metric_params = %{"short_name" => short_name, "graph_value" => graph_value}) do
+  def create(conn, metric_params) do
+    short_name = Map.get(metric_params, "short_name")
+    graph_value = Map.get(metric_params, "graph_value")
     with changeset <- AngelWeb.Schemas.Metric.changeset(%AngelWeb.Schemas.Metric{}, metric_params),
          true <- changeset.valid?,
          metric <- Ecto.Changeset.apply_changes(changeset) do

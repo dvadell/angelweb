@@ -1,4 +1,5 @@
 defmodule Angel.Events do
+  @behaviour Angel.Events.Behaviour
   @moduledoc """
   The Events context.
   """
