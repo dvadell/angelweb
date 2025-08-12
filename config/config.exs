@@ -8,8 +8,11 @@
 import Config
 
 config :angel,
-  ecto_repos: [Angel.Repo],
+  ecto_repos: [Angel.Repo, Angel.NonTransactionalRepo],
   generators: [timestamp_type: :utc_datetime]
+
+config :angel, Angel.NonTransactionalRepo,
+  priv: "priv/repo"
 
 frontend_url = 
   case System.fetch_env("FRONTEND_URL") do

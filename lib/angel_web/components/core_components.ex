@@ -17,7 +17,7 @@ defmodule AngelWeb.CoreComponents do
   use Phoenix.Component
 
   alias Phoenix.LiveView.JS
-  import AngelWeb.Gettext
+  use Gettext, backend: AngelWeb.Gettext
   import Phoenix.HTML
 
   @doc """

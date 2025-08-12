@@ -59,7 +59,8 @@ defmodule Angel.MixProject do
       {:dns_cluster, "~> 0.1.1"},
       {:bandit, "~> 1.2"},
       {:httpoison, "~> 2.0"},
-      {:earmark, "~> 1.4"}
+      {:earmark, "~> 1.4"},
+      {:mox, "~> 1.0", only: :test}
     ]
   end
 

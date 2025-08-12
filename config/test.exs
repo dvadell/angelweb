@@ -13,6 +13,13 @@ config :angel, Angel.Repo,
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: System.schedulers_online() * 2
 
+config :angel, Angel.NonTransactionalRepo,
+  username: "postgres",
+  password: "postgres",
+  hostname: "localhost",
+  database: "angel_test#{System.get_env("MIX_TEST_PARTITION")}",
+  pool_size: System.schedulers_online() * 2
+
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
 config :angel, AngelWeb.Endpoint,
@@ -35,3 +42,5 @@ config :phoenix, :plug_init_mode, :runtime
 config :phoenix_live_view,
   # Enable helpful, but potentially expensive runtime checks
   enable_expensive_runtime_checks: true
+
+config :angel, Angel.Graphs, Angel.Graphs.Mock

@@ -1,4 +1,5 @@
 defmodule Angel.Graphs do
+  @behaviour Angel.Graphs.Behaviour
   @moduledoc """
   The Graphs context.
   """
