@@ -20,14 +20,19 @@ To test it with curl
 
 ## Running tests
 ```
-docker compose run web /bin/bash
-MIX_ENV=test mix reset
-MIX_ENV=test mix test
+docker compose run -e MIX_ENV=test web mix reset
+docker compose run -e MIX_ENV=test web mix test
 ```
+
+## Web Interface
+
+### `GET /graphs`
+
+*   **Description**: A web interface for displaying stored metric graphs. It provides a visual representation of the collected data. This is a Phoenix LiveView page.
 
 ## API Endpoints
 
-This project exposes two main API endpoints:
+This project exposes the following API endpoints:
 
 ### `POST /api/v1/metric`
 
@@ -43,9 +48,18 @@ This project exposes two main API endpoints:
     }
     ```
 
-### `GET /graphs`
+### `GET /api/v1/graphs/:name`
 
-*   **Description**: This endpoint is used for displaying the stored metric graphs. It provides a visual representation of the collected data.
+*   **Description**: This endpoint is used for fetching metric data for a specific graph within a time range.
 *   **Method**: `GET`
+*   **URL Parameters**:
+    *   `name`: The short name of the graph.
+*   **Query Parameters**:
+    *   `start_time`: The start of the time range in ISO8601 format (e.g., `2023-01-01T00:00:00Z`).
+    *   `end_time`: The end of the time range in ISO8601 format (e.g., `2023-01-02T00:00:00Z`).
+*   **Example Request**:
+    ```
+    GET /api/v1/graphs/example_metric?start_time=2023-01-01T00:00:00Z&end_time=2023-01-02T00:00:00Z
+    ```
 
 To "deploy" see https://dev.to/hlappa/development-environment-for-elixir-phoenix-with-docker-and-docker-compose-2g17
