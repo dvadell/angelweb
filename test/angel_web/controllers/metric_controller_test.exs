@@ -112,4 +112,28 @@ defmodule AngelWeb.MetricControllerTest do
     conn = post(conn, "/api/v1/metric", %{}) # Send empty map to trigger invalid data path
     assert json_response(conn, 400) == %{"error" => "Invalid data"}
   end
+
+  test "ingested data is persisted in the database", %{conn: conn} do
+    # Do not mock Angel.Repo for this test to verify actual persistence
+    # Mox.verify! is called automatically at the end of each test
+
+    short_name = "test.metric.persisted"
+    graph_value = 999
+    type = "g"
+    reporter = "test_reporter_persisted"
+
+    conn = post(conn, "/api/v1/metric", %{short_name: short_name, graph_value: graph_value, type: type, reporter: reporter})
+    assert json_response(conn, 201) == %{"message" => "Data sent to TimescaleDB"}
+
+    # Verify data in the database
+    # The short_name is prefixed with "jr."
+    prefixed_short_name = "jr." <> short_name
+
+    # Since timestamp is NOW(), we can only check name and value
+    # We need to query the raw metrics table as there's no Ecto schema for it directly
+    {:ok, %{rows: rows}} = Angel.Repo.query("SELECT name, value FROM metrics WHERE name = $1 AND value = $2;", [prefixed_short_name, graph_value])
+
+    assert length(rows) == 1
+    assert List.first(rows) == [prefixed_short_name, graph_value]
+  end
 end
