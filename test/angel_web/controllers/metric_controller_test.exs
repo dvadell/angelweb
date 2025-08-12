@@ -1,6 +1,5 @@
 defmodule AngelWeb.MetricControllerTest do
   use AngelWeb.ConnCase
-  import Mox
 
   
 

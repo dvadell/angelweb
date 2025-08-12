@@ -28,7 +28,7 @@ defmodule AngelWeb.ConnCase do
       import Plug.Conn
       import Phoenix.ConnTest
       import AngelWeb.ConnCase
-      import ExUnit.Callbacks, only: [with_mock: 3]
+      import Mox
     end
   end
 
