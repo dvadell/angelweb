@@ -41,6 +41,15 @@ defmodule AngelWeb.MetricControllerTest do
     assert json_response(conn, 400) == %{"error" => "Invalid parameters or data not found"}
   end
 
+  test "show returns empty data when start_time is after end_time", %{conn: conn} do
+    Angel.Graphs.Mock
+    |> expect(:fetch_timescaledb_data, fn "test.metric", _start_time, _end_time ->
+      {:ok, []}
+    end)
+    conn = get(conn, "/api/v1/graphs/test.metric?start_time=2023-03-15T00:01:00Z&end_time=2023-03-15T00:00:00Z")
+    assert json_response(conn, 200) == []
+  end
+
   test "create returns 201 for valid metric data", %{conn: conn} do
     Angel.Graphs.Mock
     |> expect(:create_or_update_graph, fn %{"short_name" => "jr.test.metric", "units" => "gauge"} ->
