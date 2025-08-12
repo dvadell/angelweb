@@ -11,6 +11,12 @@ config :angel,
   ecto_repos: [Angel.Repo],
   generators: [timestamp_type: :utc_datetime]
 
+frontend_url = 
+  case System.fetch_env("FRONTEND_URL") do
+    {:ok, result} -> result
+    _ -> "https://localhost:4000"
+  end
+
 # Configures the endpoint
 config :angel, AngelWeb.Endpoint,
   url: [host: "localhost"],
@@ -21,7 +27,7 @@ config :angel, AngelWeb.Endpoint,
   ],
   pubsub_server: Angel.PubSub,
   live_view: [signing_salt: "9sNOeGFZ"],
-  check_origin: [System.fetch_env!("FRONTEND_URL")]
+  check_origin: frontend_url
 
 # Configures the mailer
 #
