@@ -2,7 +2,7 @@
     <ul>
     <%= Enum.map(@graphs, fn g -> %>
     <li>
-      <a href={"/graphs/stats.gauges.jr.#{g.short_name}"}>
+      <a href={"/graphs/#{g.short_name}"}>
         <%= g.short_name %>
       </a>
     </li>

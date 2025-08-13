@@ -5,16 +5,15 @@ defmodule AngelWeb.IndexLive.Show do
 
   @impl true
   def mount(%{"id" => graph_name}, _session, socket) do
-    shorter_graph_name = graph_name |> String.replace("stats.gauges.jr.", "")
-    graph = Graphs.get_by_short_name(shorter_graph_name) || %Angel.Graphs.Index{short_name: shorter_graph_name, title: "", notes: ""}
+    graph = Graphs.get_by_short_name(graph_name) || %Angel.Graphs.Index{short_name: graph_name, title: "", notes: ""}
 
     # Create the form changeset
     changeset = Angel.Graphs.Index.changeset(graph, %{})
 
     {:ok,
       socket
-      |> assign(:events, Angel.Events.for_graph(shorter_graph_name))
-      |> assign(:graph_name, shorter_graph_name)
+      |> assign(:events, Angel.Events.for_graph(graph_name))
+      |> assign(:graph_name, graph_name)
       |> assign(:graph, graph)
       |> assign(:form, to_form(changeset))
       |> assign(:show_form, false)

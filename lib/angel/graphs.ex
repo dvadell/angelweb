@@ -109,10 +109,9 @@ defmodule Angel.Graphs do
   end
 
   def fetch_timescaledb_data(graph_name_with_prefix, start_time, end_time) do
-    # The name in the metrics table likely has the "jr." prefix, so we use it directly.
     query = "SELECT * FROM get_metrics($1, $2, $3);"
 
-    case Repo.query(query, ["jr." <> graph_name_with_prefix, start_time, end_time]) do
+    case Repo.query(query, [graph_name_with_prefix, start_time, end_time]) do
       {:ok, %Postgrex.Result{rows: rows}} ->
         datapoints =
           Enum.map(rows, fn [timestamp, avg_value, _max, _min] ->
@@ -132,11 +131,16 @@ defmodule Angel.Graphs do
   end
 
   def create_or_update_graph(attrs) do
-    case Repo.get_by(Index, short_name: attrs["short_name"]) do
+    sanitized_attrs = Map.update!(attrs, "short_name", &sanitize_short_name/1)
+    case Repo.get_by(Index, short_name: sanitized_attrs["short_name"]) do
       nil ->
-        create_index(attrs)
+        create_index(sanitized_attrs)
       graph ->
-        update_index(graph, attrs)
+        update_index(graph, sanitized_attrs)
     end
+  end
+
+  def sanitize_short_name(short_name) do
+    Regex.replace(~r/[^a-zA-Z0-9_]/, short_name, "")
   end
 end
