@@ -7,6 +7,8 @@ defmodule Angel.Graphs.Index do
     field :units, :string
     field :title, :string, default: ""
     field :notes, :string, default: ""
+    field :min_value, :float
+    field :max_value, :float
 
     timestamps(type: :utc_datetime)
   end
@@ -14,7 +16,7 @@ defmodule Angel.Graphs.Index do
   @doc false
   def changeset(index, attrs) do
     index
-    |> cast(attrs, [:short_name, :units, :title, :notes])
+    |> cast(attrs, [:short_name, :units, :title, :notes, :min_value, :max_value])
     |> validate_required([:short_name])
   end
 end

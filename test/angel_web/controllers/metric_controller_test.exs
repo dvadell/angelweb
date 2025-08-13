@@ -52,7 +52,7 @@ defmodule AngelWeb.MetricControllerTest do
 
   test "create returns 201 for valid metric data", %{conn: conn} do
     Angel.Graphs.Mock
-    |> expect(:create_or_update_graph, fn %{"short_name" => "jr.test.metric", "units" => "gauge"} ->
+    |> expect(:create_or_update_graph, fn %{"short_name" => "jr.test.metric", "units" => "gauge", "min_value" => nil, "max_value" => nil} ->
       {:ok, %{short_name: "jr.test.metric", units: "gauge"}}
     end)
 
@@ -67,6 +67,26 @@ defmodule AngelWeb.MetricControllerTest do
     end)
 
     conn = post(conn, "/api/v1/metric", %{short_name: "test.metric", graph_value: 123, type: "g", reporter: "test_reporter"})
+    assert json_response(conn, 201) == %{"message" => "Data sent to TimescaleDB"}
+  end
+
+  test "create returns 201 for valid metric data with min_value and max_value", %{conn: conn} do
+    Angel.Graphs.Mock
+    |> expect(:create_or_update_graph, fn %{"short_name" => "jr.test.metric", "units" => "gauge", "min_value" => 0.0, "max_value" => 100.0} ->
+      {:ok, %{short_name: "jr.test.metric", units: "gauge"}}
+    end)
+
+    Angel.Events.Mock
+    |> expect(:create_event, fn %{for_graph: "jr.test.metric", text: "Value: 123 g"} ->
+      {:ok, %{}}
+    end)
+
+    Angel.Repo.Mock
+    |> expect(:query, fn "INSERT INTO metrics(timestamp, name, value) VALUES (NOW(), $1, $2);", ["jr.test.metric", 123] ->
+      {:ok, %{}}
+    end)
+
+    conn = post(conn, "/api/v1/metric", %{short_name: "test.metric", graph_value: 123, type: "g", reporter: "test_reporter", min_value: 0.0, max_value: 100.0})
     assert json_response(conn, 201) == %{"message" => "Data sent to TimescaleDB"}
   end
 
@@ -144,5 +164,53 @@ defmodule AngelWeb.MetricControllerTest do
 
     assert length(rows) == 1
     assert List.first(rows) == [prefixed_short_name, graph_value]
+  end
+
+  test "create stores min_value and max_value in Graph database", %{conn: conn} do
+    short_name = "test.metric.with_min_max"
+    graph_value = 100
+    type = "g"
+    min_value = 0.0
+    max_value = 200.0
+
+    Angel.Graphs.Mock
+    |> expect(:create_or_update_graph, fn %{"short_name" => "jr." <> ^short_name, "units" => ^type, "min_value" => ^min_value, "max_value" => ^max_value} ->
+      {:ok, %{short_name: "jr." <> short_name, units: type, min_value: min_value, max_value: max_value}}
+    end)
+
+    expected_event_text = "Value: " <> to_string(graph_value) <> " " <> type
+    Angel.Events.Mock
+    |> expect(:create_event, fn %{for_graph: "jr." <> ^short_name, text: ^expected_event_text} ->
+      {:ok, %{}}
+    end)
+
+    Angel.Repo.Mock
+    |> expect(:query, fn "INSERT INTO metrics(timestamp, name, value) VALUES (NOW(), $1, $2);", ["jr." <> ^short_name, ^graph_value] ->
+      {:ok, %{}}
+    end)
+
+    conn = post(conn, "/api/v1/metric", %{short_name: short_name, graph_value: graph_value, type: type, min_value: min_value, max_value: max_value})
+    assert json_response(conn, 201) == %{"message" => "Data sent to TimescaleDB"}
+  end
+
+  test "min_value and max_value are persisted in the Graph database", %{conn: conn} do
+    # Do not mock Angel.Graphs or Angel.Repo for this test to verify actual persistence
+    # Mox.verify! is called automatically at the end of each test
+
+    short_name = "test.metric.persisted_min_max"
+    graph_value = 50
+    type = "g"
+    min_value = 10.0
+    max_value = 100.0
+
+    conn = post(conn, "/api/v1/metric", %{short_name: short_name, graph_value: graph_value, type: type, min_value: min_value, max_value: max_value})
+    assert json_response(conn, 201) == %{"message" => "Data sent to TimescaleDB"}
+
+    # Verify data in the Graph database
+    prefixed_short_name = "jr." <> short_name
+    graph = Angel.Repo.get_by(Angel.Graphs.Index, short_name: prefixed_short_name)
+
+    assert graph.min_value == min_value
+    assert graph.max_value == max_value
   end
 end
