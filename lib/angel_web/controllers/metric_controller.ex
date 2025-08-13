@@ -22,6 +22,16 @@ defmodule AngelWeb.MetricController do
 
       Events.create_event( %{for_graph: prefixed_short_name, text: "Value: #{graph_value} #{graph.units}"} )
 
+      # Check if graph_value is below min_value or above max_value
+      cond do
+        graph.min_value && metric.graph_value < graph.min_value ->
+          Events.create_event(%{for_graph: prefixed_short_name, text: "Value #{metric.graph_value} is below min_value #{graph.min_value}"})
+        graph.max_value && metric.graph_value > graph.max_value ->
+          Events.create_event(%{for_graph: prefixed_short_name, text: "Value #{metric.graph_value} is above max_value #{graph.max_value}"})
+        true ->
+          :ok
+      end
+
       Repo.query("INSERT INTO metrics(timestamp, name, value) VALUES (NOW(), $1, $2);", [prefixed_short_name, metric.graph_value])
       conn
       |> put_status(:created)

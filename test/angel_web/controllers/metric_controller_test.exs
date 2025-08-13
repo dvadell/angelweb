@@ -178,9 +178,10 @@ defmodule AngelWeb.MetricControllerTest do
       {:ok, %{short_name: "jr." <> short_name, units: type, min_value: min_value, max_value: max_value}}
     end)
 
-    expected_event_text = "Value: " <> to_string(graph_value) <> " " <> type
+    _expected_event_text = "Value: " <> to_string(graph_value) <> " " <> type
+    expected_event_text_initial = "Value: " <> to_string(graph_value) <> " " <> type
     Angel.Events.Mock
-    |> expect(:create_event, fn %{for_graph: "jr." <> ^short_name, text: ^expected_event_text} ->
+    |> expect(:create_event, fn %{for_graph: "jr." <> ^short_name, text: ^expected_event_text_initial} ->
       {:ok, %{}}
     end)
 
@@ -212,5 +213,94 @@ defmodule AngelWeb.MetricControllerTest do
 
     assert graph.min_value == min_value
     assert graph.max_value == max_value
+  end
+
+  test "creates event when graph_value is below min_value", %{conn: conn} do
+    short_name = "test.metric.below_min"
+    graph_value = 5
+    type = "g"
+    min_value = 10.0
+    max_value = 100.0
+
+    Angel.Graphs.Mock
+    |> expect(:create_or_update_graph, fn %{"short_name" => "jr." <> ^short_name, "units" => ^type, "min_value" => ^min_value, "max_value" => ^max_value} ->
+      {:ok, %{short_name: "jr." <> short_name, units: type, min_value: min_value, max_value: max_value}}
+    end)
+
+    expected_event_text_initial = "Value: " <> to_string(graph_value) <> " " <> type
+    expected_event_text_below_min = "Value " <> to_string(graph_value) <> " is below min_value " <> to_string(min_value)
+    Angel.Events.Mock
+    |> expect(:create_event, fn %{for_graph: "jr." <> ^short_name, text: ^expected_event_text_initial} ->
+      {:ok, %{}}
+    end)
+    |> expect(:create_event, fn %{for_graph: "jr." <> ^short_name, text: ^expected_event_text_below_min} ->
+      {:ok, %{}}
+    end)
+
+    Angel.Repo.Mock
+    |> expect(:query, fn "INSERT INTO metrics(timestamp, name, value) VALUES (NOW(), $1, $2);", ["jr." <> ^short_name, ^graph_value] ->
+      {:ok, %{}}
+    end)
+
+    conn = post(conn, "/api/v1/metric", %{short_name: short_name, graph_value: graph_value, type: type, min_value: min_value, max_value: max_value})
+    assert json_response(conn, 201) == %{"message" => "Data sent to TimescaleDB"}
+  end
+
+  test "creates event when graph_value is above max_value", %{conn: conn} do
+    short_name = "test.metric.above_max"
+    graph_value = 150
+    type = "g"
+    min_value = 10.0
+    max_value = 100.0
+
+    Angel.Graphs.Mock
+    |> expect(:create_or_update_graph, fn %{"short_name" => "jr." <> ^short_name, "units" => ^type, "min_value" => ^min_value, "max_value" => ^max_value} ->
+      {:ok, %{short_name: "jr." <> short_name, units: type, min_value: min_value, max_value: max_value}}
+    end)
+
+    expected_event_text_initial = "Value: " <> to_string(graph_value) <> " " <> type
+    expected_event_text_above_max = "Value " <> to_string(graph_value) <> " is above max_value " <> to_string(max_value)
+    Angel.Events.Mock
+    |> expect(:create_event, fn %{for_graph: "jr." <> ^short_name, text: ^expected_event_text_initial} ->
+      {:ok, %{}}
+    end)
+    |> expect(:create_event, fn %{for_graph: "jr." <> ^short_name, text: ^expected_event_text_above_max} ->
+      {:ok, %{}}
+    end)
+
+    Angel.Repo.Mock
+    |> expect(:query, fn "INSERT INTO metrics(timestamp, name, value) VALUES (NOW(), $1, $2);", ["jr." <> ^short_name, ^graph_value] ->
+      {:ok, %{}}
+    end)
+
+    conn = post(conn, "/api/v1/metric", %{short_name: short_name, graph_value: graph_value, type: type, min_value: min_value, max_value: max_value})
+    assert json_response(conn, 201) == %{"message" => "Data sent to TimescaleDB"}
+  end
+
+  test "does not create extra event when graph_value is within range", %{conn: conn} do
+    short_name = "test.metric.within_range"
+    graph_value = 50
+    type = "g"
+    min_value = 10.0
+    max_value = 100.0
+
+    Angel.Graphs.Mock
+    |> expect(:create_or_update_graph, fn %{"short_name" => "jr." <> ^short_name, "units" => ^type, "min_value" => ^min_value, "max_value" => ^max_value} ->
+      {:ok, %{short_name: "jr." <> short_name, units: type, min_value: min_value, max_value: max_value}}
+    end)
+
+    expected_event_text_initial = "Value: " <> to_string(graph_value) <> " " <> type
+    Angel.Events.Mock
+    |> expect(:create_event, fn %{for_graph: "jr." <> ^short_name, text: ^expected_event_text_initial} ->
+      {:ok, %{}}
+    end)
+
+    Angel.Repo.Mock
+    |> expect(:query, fn "INSERT INTO metrics(timestamp, name, value) VALUES (NOW(), $1, $2);", ["jr." <> ^short_name, ^graph_value] ->
+      {:ok, %{}}
+    end)
+
+    conn = post(conn, "/api/v1/metric", %{short_name: short_name, graph_value: graph_value, type: type, min_value: min_value, max_value: max_value})
+    assert json_response(conn, 201) == %{"message" => "Data sent to TimescaleDB"}
   end
 end
