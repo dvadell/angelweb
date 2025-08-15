@@ -24,13 +24,14 @@ import topbar from "../vendor/topbar"
 import Chart from 'chart.js/auto';
 import zoomPlugin from 'chartjs-plugin-zoom';
 import 'chartjs-scale-timestack';
+import annotationPlugin from 'chartjs-plugin-annotation';
 
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 
 // Chart.js Hook for LiveView
 let ChartHook = {
   mounted() {
-    Chart.register(zoomPlugin);
+    Chart.register(zoomPlugin, annotationPlugin);
     console.log('Chart hook mounted - requesting initial data');
     
     // Initialize event queue for when connection is lost
@@ -168,6 +169,43 @@ let ChartHook = {
               onPan: (context) => {
                 this.handlePan(context);
               }
+            }
+          },
+          annotation: {
+            // See https://www.chartjs.org/chartjs-plugin-annotation/latest/guide/types/line.html
+            annotations: {
+              ...(typeof data[0].min_value === 'number' && {
+                minLine: {
+                  type: 'line',
+                  yMin: data[0].min_value,
+                  yMax: data[0].min_value,
+                  borderColor: 'rgb(255, 150, 150)',
+                  borderDash: [10, 10],
+                  borderWidth: 2,
+                  label: {
+                    content: `Min: ${data[0].min_value}`,
+                    enabled: true,
+                    position: 'end'
+                  }
+                }
+              }),
+              ...(typeof data[0].max_value === 'number' && {
+                maxLine: {
+                  type: 'line',
+                  yMin: data[0].max_value,
+                  yMax: data[0].max_value,
+                  borderColor: 'rgb(255, 150, 150)',
+                  borderDash: [10, 10],
+                  borderWidth: 2,
+                  label: {
+                    content: `Max: ${data[0].max_value}`,
+                    display: true,
+                    backgroundColor: 'rgba(255, 150, 150, 0.3)',
+                    color: '000',
+                    //position: 'end'
+                  }
+                }
+              })
             }
           }
         }
