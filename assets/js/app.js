@@ -184,8 +184,9 @@ let ChartHook = {
                   borderWidth: 2,
                   label: {
                     content: `Min: ${data[0].min_value}`,
-                    enabled: true,
-                    position: 'end'
+                    display: true,
+                    backgroundColor: 'rgba(255, 150, 150, 0.3)',
+                    color: '000',
                   }
                 }
               }),
@@ -202,7 +203,6 @@ let ChartHook = {
                     display: true,
                     backgroundColor: 'rgba(255, 150, 150, 0.3)',
                     color: '000',
-                    //position: 'end'
                   }
                 }
               })
