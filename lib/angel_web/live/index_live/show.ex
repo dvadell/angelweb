@@ -19,6 +19,7 @@ defmodule AngelWeb.IndexLive.Show do
       |> assign(:show_form, false)
       |> assign(:show_events, false)
       |> assign(:show_notes, false)
+      |> assign(:chart_is_playing, true)
     }
   end
 
@@ -72,6 +73,11 @@ defmodule AngelWeb.IndexLive.Show do
   @impl true
   def handle_event("toggle_notes", _, socket) do
     {:noreply, assign(socket, :show_notes, not socket.assigns.show_notes)}
+  end
+
+  @impl true
+  def handle_event("toggle_chart_play", _, socket) do
+    {:noreply, assign(socket, :chart_is_playing, not socket.assigns.chart_is_playing)}
   end
 
   @impl true
