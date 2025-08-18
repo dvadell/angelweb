@@ -1,10 +1,10 @@
-    <h1>Graphs List</h1>
-    <ul>
-    <%= Enum.map(@graphs, fn g -> %>
+<h1>Graphs List</h1>
+<ul>
+  <%= Enum.map(@graphs, fn g -> %>
     <li>
       <a href={"/graphs/#{g.short_name}"}>
-        <%= g.short_name %>
+        {g.short_name}
       </a>
     </li>
-    <% end) %>
-    </ul>
+  <% end) %>
+</ul>

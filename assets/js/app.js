@@ -142,6 +142,27 @@ let ChartHook = {
   // Method to render chart with new data (called from LiveView events)
   renderChart(data) {
     console.log('Hook renderChart called with data:', data);
+    window.chartData = data;
+
+    // Helper function to format milliseconds to human-readable duration
+    const formatDuration = (ms) => {
+      const seconds = ms / 1000;
+      const minutes = seconds / 60;
+      const hours = minutes / 60;
+      const days = hours / 24;
+
+      if (days >= 1) {
+        return `${days.toFixed(1)}d`;
+      } else if (hours >= 1) {
+        return `${hours.toFixed(1)}hr`;
+      } else if (minutes >= 1) {
+        return `${minutes.toFixed(1)}min`;
+      } else if (seconds >= 1) {
+        return `${seconds.toFixed(1)}s`;
+      } else {
+        return `${ms.toFixed(0)}ms`;
+      }
+    };
     
     if (!data || !data[0] || !data[0].datapoints) {
       console.warn('Invalid chart data structure:', data);
@@ -169,8 +190,35 @@ let ChartHook = {
         animation: false,
         scales: {
           x: { type: 'timestack' },
+          y: {
+            ticks: {
+              callback: function(value, index, ticks) {
+                if (data[0].graph_type === 'time') {
+                  return formatDuration(value);
+                } else {
+                  return value;
+                }
+              }
+            }
+          }
         },
         plugins: {
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                let label = context.dataset.label || '';
+                if (label) {
+                  label += ': ';
+                }
+                if (data[0].graph_type === 'time') {
+                  label += formatDuration(context.raw);
+                } else {
+                  label += context.raw;
+                }
+                return label;
+              }
+            }
+          },
           zoom: {
             zoom: {
               wheel: { enabled: true },
@@ -200,7 +248,7 @@ let ChartHook = {
                   borderDash: [10, 10],
                   borderWidth: 2,
                   label: {
-                    content: `Min: ${data[0].min_value}`,
+                    content: `Min: ${data[0].graph_type === 'time' ? formatDuration(data[0].min_value) : data[0].min_value}`,
                     display: true,
                     backgroundColor: 'rgba(255, 150, 150, 0.3)',
                     color: '000',
@@ -216,7 +264,7 @@ let ChartHook = {
                   borderDash: [10, 10],
                   borderWidth: 2,
                   label: {
-                    content: `Max: ${data[0].max_value}`,
+                    content: `Max: ${data[0].graph_type === 'time' ? formatDuration(data[0].max_value) : data[0].max_value}`,
                     display: true,
                     backgroundColor: 'rgba(255, 150, 150, 0.3)',
                     color: '000',

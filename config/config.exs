@@ -11,10 +11,9 @@ config :angel,
   ecto_repos: [Angel.Repo, Angel.NonTransactionalRepo],
   generators: [timestamp_type: :utc_datetime]
 
-config :angel, Angel.NonTransactionalRepo,
-  priv: "priv/repo"
+config :angel, Angel.NonTransactionalRepo, priv: "priv/repo"
 
-frontend_url = 
+frontend_url =
   case System.fetch_env("FRONTEND_URL") do
     {:ok, result} -> result
     _ -> "https://localhost:4000"
@@ -70,8 +69,6 @@ config :logger, :console,
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
-
-
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

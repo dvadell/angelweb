@@ -19,4 +19,3 @@ defmodule AngelWeb.Schemas.Metric do
     |> validate_number(:graph_value, greater_than_or_equal_to: 0)
   end
 end
-

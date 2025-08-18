@@ -1,12 +1,6 @@
-
 <%= if @show_form do %>
   <div id="graph-form-container">
-    <.form
-      for={@form}
-      id="graph-form"
-      phx-change="validate"
-      phx-submit="save"
-    >
+    <.form for={@form} id="graph-form" phx-change="validate" phx-submit="save">
       <div class="flex flex-col gap-4">
         <div class="flex flex-col gap-2">
           <.label for={@form[:title].id}>
@@ -53,7 +47,7 @@
   </div>
 <% else %>
   <div class="flex items-center mb-4">
-    <h1 class="text-4xl font-bold text-gray-800"><%= @graph.title %></h1>
+    <h1 class="text-4xl font-bold text-gray-800">{@graph.title}</h1>
     <button phx-click="toggle_form" class="ml-4">
       <.icon name="hero-pencil-solid" class="w-6 h-6 text-gray-500 hover:text-gray-700" />
     </button>
@@ -66,24 +60,26 @@
     </button>
   </div>
 <% end %>
-    <div id="chart-container" phx-update="ignore">
-      <canvas phx-hook="Chart" id="myChart"></canvas>
-    </div>
+<div id="chart-container" phx-update="ignore">
+  <canvas phx-hook="Chart" id="myChart"></canvas>
+</div>
 
-    <h1 phx-click="toggle_events" class="text-4xl font-bold text-gray-800 mb-4 cursor-pointer"><span class="mr-2"><%= if @show_events, do: "▼", else: "▶" %></span>Events</h1>
-    <%= if @show_events do %>
-      <ul>
-      <%= Enum.map(@events, fn e -> %>
-      <li> <%= Map.get(e, :inserted_at) %> : <%= Map.get(e, :text) %>  <%= Map.get(e, :units) %>
-      </li>
-      <% end) %>
-      </ul>
-    <% end %>
+<h1 phx-click="toggle_events" class="text-4xl font-bold text-gray-800 mb-4 cursor-pointer">
+  <span class="mr-2"><%= if @show_events, do: "▼", else: "▶" %></span>Events
+</h1>
+<%= if @show_events do %>
+  <ul>
+    <%= Enum.map(@events, fn e -> %>
+      <li>{Map.get(e, :inserted_at)} : {Map.get(e, :text)} {Map.get(e, :units)}</li>
+    <% end) %>
+  </ul>
+<% end %>
 
-    <h1 phx-click="toggle_notes" class="text-4xl font-bold text-gray-800 mb-4 cursor-pointer"><span class="mr-2"><%= if @show_notes, do: "▼", else: "▶" %></span>Notes</h1>
-    <%= if @show_notes do %>
-      <div class="prose">
-        <.markdown content={@graph.notes} />
-      </div>
-    <% end %>
-    
+<h1 phx-click="toggle_notes" class="text-4xl font-bold text-gray-800 mb-4 cursor-pointer">
+  <span class="mr-2"><%= if @show_notes, do: "▼", else: "▶" %></span>Notes
+</h1>
+<%= if @show_notes do %>
+  <div class="prose">
+    <.markdown content={@graph.notes} />
+  </div>
+<% end %>

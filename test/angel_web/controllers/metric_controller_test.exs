@@ -1,25 +1,38 @@
 defmodule AngelWeb.MetricControllerTest do
   use AngelWeb.ConnCase
 
-  
-
   test "show returns metric data for valid parameters", %{conn: conn} do
     Angel.Graphs.Mock
     |> expect(:fetch_timescaledb_data, fn "test.metric", _start_time, _end_time ->
-      {:ok, [%{target: "test.metric", datapoints: [[10, 1678886400000], [20, 1678886460000]]}]}
+      {:ok,
+       [%{target: "test.metric", datapoints: [[10, 1_678_886_400_000], [20, 1_678_886_460_000]]}]}
     end)
 
-    conn = get(conn, "/api/v1/graphs/test.metric?start_time=2023-03-15T00:00:00Z&end_time=2023-03-15T00:01:00Z")
-    assert json_response(conn, 200) == [%{"target" => "test.metric", "datapoints" => [[10, 1678886400000], [20, 1678886460000]]}]
+    conn =
+      get(
+        conn,
+        "/api/v1/graphs/test.metric?start_time=2023-03-15T00:00:00Z&end_time=2023-03-15T00:01:00Z"
+      )
+
+    assert json_response(conn, 200) == [
+             %{
+               "target" => "test.metric",
+               "datapoints" => [[10, 1_678_886_400_000], [20, 1_678_886_460_000]]
+             }
+           ]
   end
 
   test "show returns bad request for invalid start_time", %{conn: conn} do
-    conn = get(conn, "/api/v1/graphs/test.metric?start_time=invalid&end_time=2023-03-15T00:01:00Z")
+    conn =
+      get(conn, "/api/v1/graphs/test.metric?start_time=invalid&end_time=2023-03-15T00:01:00Z")
+
     assert json_response(conn, 400) == %{"error" => "Invalid parameters or data not found"}
   end
 
   test "show returns bad request for invalid end_time", %{conn: conn} do
-    conn = get(conn, "/api/v1/graphs/test.metric?start_time=2023-03-15T00:00:00Z&end_time=invalid")
+    conn =
+      get(conn, "/api/v1/graphs/test.metric?start_time=2023-03-15T00:00:00Z&end_time=invalid")
+
     assert json_response(conn, 400) == %{"error" => "Invalid parameters or data not found"}
   end
 
@@ -28,7 +41,13 @@ defmodule AngelWeb.MetricControllerTest do
     |> expect(:fetch_timescaledb_data, fn "test.metric", _start_time, _end_time ->
       {:ok, []}
     end)
-    conn = get(conn, "/api/v1/graphs/test.metric?start_time=2023-03-15T00:00:00Z&end_time=2023-03-15T00:01:00Z")
+
+    conn =
+      get(
+        conn,
+        "/api/v1/graphs/test.metric?start_time=2023-03-15T00:00:00Z&end_time=2023-03-15T00:01:00Z"
+      )
+
     assert json_response(conn, 200) == []
   end
 
@@ -37,7 +56,10 @@ defmodule AngelWeb.MetricControllerTest do
     |> expect(:fetch_timescaledb_data, fn "test.metric", _start_time, _end_time ->
       {:error, :some_error}
     end)
-    conn = get(conn, "/api/v1/graphs/test.metric?start_time=2023-03-15T00:00:00Z&end_time=invalid")
+
+    conn =
+      get(conn, "/api/v1/graphs/test.metric?start_time=2023-03-15T00:00:00Z&end_time=invalid")
+
     assert json_response(conn, 400) == %{"error" => "Invalid parameters or data not found"}
   end
 
@@ -46,13 +68,24 @@ defmodule AngelWeb.MetricControllerTest do
     |> expect(:fetch_timescaledb_data, fn "test.metric", _start_time, _end_time ->
       {:ok, []}
     end)
-    conn = get(conn, "/api/v1/graphs/test.metric?start_time=2023-03-15T00:01:00Z&end_time=2023-03-15T00:00:00Z")
+
+    conn =
+      get(
+        conn,
+        "/api/v1/graphs/test.metric?start_time=2023-03-15T00:01:00Z&end_time=2023-03-15T00:00:00Z"
+      )
+
     assert json_response(conn, 200) == []
   end
 
   test "create returns 201 for valid metric data", %{conn: conn} do
     Angel.Graphs.Mock
-    |> expect(:create_or_update_graph, fn %{"short_name" => "test.metric", "units" => "gauge", "min_value" => nil, "max_value" => nil} ->
+    |> expect(:create_or_update_graph, fn %{
+                                            "short_name" => "test.metric",
+                                            "units" => "gauge",
+                                            "min_value" => nil,
+                                            "max_value" => nil
+                                          } ->
       {:ok, %{short_name: "test.metric", units: "gauge"}}
     end)
 
@@ -62,17 +95,30 @@ defmodule AngelWeb.MetricControllerTest do
     end)
 
     Angel.Repo.Mock
-    |> expect(:query, fn "INSERT INTO metrics(timestamp, name, value) VALUES (NOW(), $1, $2);", ["test.metric", 123] ->
+    |> expect(:query, fn "INSERT INTO metrics(timestamp, name, value) VALUES (NOW(), $1, $2);",
+                         ["test.metric", 123] ->
       {:ok, %{}}
     end)
 
-    conn = post(conn, "/api/v1/metric", %{short_name: "test.metric", graph_value: 123, type: "g", reporter: "test_reporter"})
+    conn =
+      post(conn, "/api/v1/metric", %{
+        short_name: "test.metric",
+        graph_value: 123,
+        type: "g",
+        reporter: "test_reporter"
+      })
+
     assert json_response(conn, 201) == %{"message" => "Data sent to TimescaleDB"}
   end
 
   test "create returns 201 for valid metric data with min_value and max_value", %{conn: conn} do
     Angel.Graphs.Mock
-    |> expect(:create_or_update_graph, fn %{"short_name" => "test.metric", "units" => "gauge", "min_value" => 0.0, "max_value" => 100.0} ->
+    |> expect(:create_or_update_graph, fn %{
+                                            "short_name" => "test.metric",
+                                            "units" => "gauge",
+                                            "min_value" => 0.0,
+                                            "max_value" => 100.0
+                                          } ->
       {:ok, %{short_name: "test.metric", units: "gauge"}}
     end)
 
@@ -82,11 +128,21 @@ defmodule AngelWeb.MetricControllerTest do
     end)
 
     Angel.Repo.Mock
-    |> expect(:query, fn "INSERT INTO metrics(timestamp, name, value) VALUES (NOW(), $1, $2);", ["test.metric", 123] ->
+    |> expect(:query, fn "INSERT INTO metrics(timestamp, name, value) VALUES (NOW(), $1, $2);",
+                         ["test.metric", 123] ->
       {:ok, %{}}
     end)
 
-    conn = post(conn, "/api/v1/metric", %{short_name: "test.metric", graph_value: 123, type: "g", reporter: "test_reporter", min_value: 0.0, max_value: 100.0})
+    conn =
+      post(conn, "/api/v1/metric", %{
+        short_name: "test.metric",
+        graph_value: 123,
+        type: "g",
+        reporter: "test_reporter",
+        min_value: 0.0,
+        max_value: 100.0
+      })
+
     assert json_response(conn, 201) == %{"message" => "Data sent to TimescaleDB"}
   end
 
@@ -96,7 +152,13 @@ defmodule AngelWeb.MetricControllerTest do
   end
 
   test "create returns 400 for missing graph_value", %{conn: conn} do
-    conn = post(conn, "/api/v1/metric", %{short_name: "test.metric", type: "g", reporter: "test_reporter"})
+    conn =
+      post(conn, "/api/v1/metric", %{
+        short_name: "test.metric",
+        type: "g",
+        reporter: "test_reporter"
+      })
+
     assert json_response(conn, 400) == %{"error" => "Invalid data"}
   end
 
@@ -112,7 +174,8 @@ defmodule AngelWeb.MetricControllerTest do
     end)
 
     Angel.Repo.Mock
-    |> expect(:query, fn "INSERT INTO metrics(timestamp, name, value) VALUES (NOW(), $1, $2);", ["test.metric", 123] ->
+    |> expect(:query, fn "INSERT INTO metrics(timestamp, name, value) VALUES (NOW(), $1, $2);",
+                         ["test.metric", 123] ->
       {:ok, %{}}
     end)
 
@@ -121,24 +184,41 @@ defmodule AngelWeb.MetricControllerTest do
   end
 
   test "create returns 400 for negative graph_value", %{conn: conn} do
-    conn = post(conn, "/api/v1/metric", %{short_name: "test.metric", graph_value: -1, type: "g", reporter: "test_reporter"})
+    conn =
+      post(conn, "/api/v1/metric", %{
+        short_name: "test.metric",
+        graph_value: -1,
+        type: "g",
+        reporter: "test_reporter"
+      })
+
     assert json_response(conn, 400) == %{"error" => "Invalid data"}
   end
 
   test "create returns 400 for invalid type", %{conn: conn} do
-    conn = post(conn, "/api/v1/metric", %{short_name: "test.metric", graph_value: 123, type: "invalid", reporter: "test_reporter"})
+    conn =
+      post(conn, "/api/v1/metric", %{
+        short_name: "test.metric",
+        graph_value: 123,
+        type: "invalid",
+        reporter: "test_reporter"
+      })
+
     assert json_response(conn, 400) == %{"error" => "Invalid data"}
   end
 
   test "create returns 400 for non-JSON content type", %{conn: conn} do
-    conn = conn
-           |> put_req_header("content-type", "text/plain")
-           |> post("/api/v1/metric", "this is not json")
+    conn =
+      conn
+      |> put_req_header("content-type", "text/plain")
+      |> post("/api/v1/metric", "this is not json")
+
     assert json_response(conn, 400) == %{"error" => "Invalid data"}
   end
 
   test "create returns 400 for invalid metric data", %{conn: conn} do
-    conn = post(conn, "/api/v1/metric", %{}) # Send empty map to trigger invalid data path
+    # Send empty map to trigger invalid data path
+    conn = post(conn, "/api/v1/metric", %{})
     assert json_response(conn, 400) == %{"error" => "Invalid data"}
   end
 
@@ -151,7 +231,14 @@ defmodule AngelWeb.MetricControllerTest do
     type = "g"
     reporter = "test_reporter_persisted"
 
-    conn = post(conn, "/api/v1/metric", %{short_name: short_name, graph_value: graph_value, type: type, reporter: reporter})
+    conn =
+      post(conn, "/api/v1/metric", %{
+        short_name: short_name,
+        graph_value: graph_value,
+        type: type,
+        reporter: reporter
+      })
+
     assert json_response(conn, 201) == %{"message" => "Data sent to TimescaleDB"}
 
     # Verify data in the database
@@ -159,7 +246,11 @@ defmodule AngelWeb.MetricControllerTest do
 
     # Since timestamp is NOW(), we can only check name and value
     # We need to query the raw metrics table as there's no Ecto schema for it directly
-    {:ok, %{rows: rows}} = Angel.Repo.query("SELECT name, value FROM metrics WHERE name = $1 AND value = $2;", [sanitized_short_name, graph_value])
+    {:ok, %{rows: rows}} =
+      Angel.Repo.query("SELECT name, value FROM metrics WHERE name = $1 AND value = $2;", [
+        sanitized_short_name,
+        graph_value
+      ])
 
     assert length(rows) == 1
     assert List.first(rows) == [sanitized_short_name, graph_value]
@@ -173,23 +264,38 @@ defmodule AngelWeb.MetricControllerTest do
     max_value = 200.0
 
     Angel.Graphs.Mock
-    |> expect(:create_or_update_graph, fn %{"short_name" => ^short_name, "units" => ^type, "min_value" => ^min_value, "max_value" => ^max_value} ->
+    |> expect(:create_or_update_graph, fn %{
+                                            "short_name" => ^short_name,
+                                            "units" => ^type,
+                                            "min_value" => ^min_value,
+                                            "max_value" => ^max_value
+                                          } ->
       {:ok, %{short_name: short_name, units: type, min_value: min_value, max_value: max_value}}
     end)
 
     _expected_event_text = "Value: " <> to_string(graph_value) <> " " <> type
     expected_event_text_initial = "Value: " <> to_string(graph_value) <> " " <> type
+
     Angel.Events.Mock
     |> expect(:create_event, fn %{for_graph: ^short_name, text: ^expected_event_text_initial} ->
       {:ok, %{}}
     end)
 
     Angel.Repo.Mock
-    |> expect(:query, fn "INSERT INTO metrics(timestamp, name, value) VALUES (NOW(), $1, $2);", [^short_name, ^graph_value] ->
+    |> expect(:query, fn "INSERT INTO metrics(timestamp, name, value) VALUES (NOW(), $1, $2);",
+                         [^short_name, ^graph_value] ->
       {:ok, %{}}
     end)
 
-    conn = post(conn, "/api/v1/metric", %{short_name: short_name, graph_value: graph_value, type: type, min_value: min_value, max_value: max_value})
+    conn =
+      post(conn, "/api/v1/metric", %{
+        short_name: short_name,
+        graph_value: graph_value,
+        type: type,
+        min_value: min_value,
+        max_value: max_value
+      })
+
     assert json_response(conn, 201) == %{"message" => "Data sent to TimescaleDB"}
   end
 
@@ -203,11 +309,19 @@ defmodule AngelWeb.MetricControllerTest do
     min_value = 10.0
     max_value = 100.0
 
-    conn = post(conn, "/api/v1/metric", %{short_name: short_name, graph_value: graph_value, type: type, min_value: min_value, max_value: max_value})
+    conn =
+      post(conn, "/api/v1/metric", %{
+        short_name: short_name,
+        graph_value: graph_value,
+        type: type,
+        min_value: min_value,
+        max_value: max_value
+      })
+
     assert json_response(conn, 201) == %{"message" => "Data sent to TimescaleDB"}
 
     # Verify data in the Graph database
-    
+
     graph = Angel.Repo.get_by(Angel.Graphs.Index, short_name: "testmetricpersisted_min_max")
 
     assert graph.min_value == min_value
@@ -222,12 +336,20 @@ defmodule AngelWeb.MetricControllerTest do
     max_value = 100.0
 
     Angel.Graphs.Mock
-    |> expect(:create_or_update_graph, fn %{"short_name" => ^short_name, "units" => ^type, "min_value" => ^min_value, "max_value" => ^max_value} ->
+    |> expect(:create_or_update_graph, fn %{
+                                            "short_name" => ^short_name,
+                                            "units" => ^type,
+                                            "min_value" => ^min_value,
+                                            "max_value" => ^max_value
+                                          } ->
       {:ok, %{short_name: short_name, units: type, min_value: min_value, max_value: max_value}}
     end)
 
     expected_event_text_initial = "Value: " <> to_string(graph_value) <> " " <> type
-    expected_event_text_below_min = "Value " <> to_string(graph_value) <> " is below min_value " <> to_string(min_value)
+
+    expected_event_text_below_min =
+      "Value " <> to_string(graph_value) <> " is below min_value " <> to_string(min_value)
+
     Angel.Events.Mock
     |> expect(:create_event, fn %{for_graph: ^short_name, text: ^expected_event_text_initial} ->
       {:ok, %{}}
@@ -237,11 +359,20 @@ defmodule AngelWeb.MetricControllerTest do
     end)
 
     Angel.Repo.Mock
-    |> expect(:query, fn "INSERT INTO metrics(timestamp, name, value) VALUES (NOW(), $1, $2);", [^short_name, ^graph_value] ->
+    |> expect(:query, fn "INSERT INTO metrics(timestamp, name, value) VALUES (NOW(), $1, $2);",
+                         [^short_name, ^graph_value] ->
       {:ok, %{}}
     end)
 
-    conn = post(conn, "/api/v1/metric", %{short_name: short_name, graph_value: graph_value, type: type, min_value: min_value, max_value: max_value})
+    conn =
+      post(conn, "/api/v1/metric", %{
+        short_name: short_name,
+        graph_value: graph_value,
+        type: type,
+        min_value: min_value,
+        max_value: max_value
+      })
+
     assert json_response(conn, 201) == %{"message" => "Data sent to TimescaleDB"}
   end
 
@@ -253,12 +384,20 @@ defmodule AngelWeb.MetricControllerTest do
     max_value = 100.0
 
     Angel.Graphs.Mock
-    |> expect(:create_or_update_graph, fn %{"short_name" => ^short_name, "units" => ^type, "min_value" => ^min_value, "max_value" => ^max_value} ->
+    |> expect(:create_or_update_graph, fn %{
+                                            "short_name" => ^short_name,
+                                            "units" => ^type,
+                                            "min_value" => ^min_value,
+                                            "max_value" => ^max_value
+                                          } ->
       {:ok, %{short_name: short_name, units: type, min_value: min_value, max_value: max_value}}
     end)
 
     expected_event_text_initial = "Value: " <> to_string(graph_value) <> " " <> type
-    expected_event_text_above_max = "Value " <> to_string(graph_value) <> " is above max_value " <> to_string(max_value)
+
+    expected_event_text_above_max =
+      "Value " <> to_string(graph_value) <> " is above max_value " <> to_string(max_value)
+
     Angel.Events.Mock
     |> expect(:create_event, fn %{for_graph: ^short_name, text: ^expected_event_text_initial} ->
       {:ok, %{}}
@@ -268,11 +407,20 @@ defmodule AngelWeb.MetricControllerTest do
     end)
 
     Angel.Repo.Mock
-    |> expect(:query, fn "INSERT INTO metrics(timestamp, name, value) VALUES (NOW(), $1, $2);", [^short_name, ^graph_value] ->
+    |> expect(:query, fn "INSERT INTO metrics(timestamp, name, value) VALUES (NOW(), $1, $2);",
+                         [^short_name, ^graph_value] ->
       {:ok, %{}}
     end)
 
-    conn = post(conn, "/api/v1/metric", %{short_name: short_name, graph_value: graph_value, type: type, min_value: min_value, max_value: max_value})
+    conn =
+      post(conn, "/api/v1/metric", %{
+        short_name: short_name,
+        graph_value: graph_value,
+        type: type,
+        min_value: min_value,
+        max_value: max_value
+      })
+
     assert json_response(conn, 201) == %{"message" => "Data sent to TimescaleDB"}
   end
 
@@ -284,22 +432,37 @@ defmodule AngelWeb.MetricControllerTest do
     max_value = 100.0
 
     Angel.Graphs.Mock
-    |> expect(:create_or_update_graph, fn %{"short_name" => ^short_name, "units" => ^type, "min_value" => ^min_value, "max_value" => ^max_value} ->
+    |> expect(:create_or_update_graph, fn %{
+                                            "short_name" => ^short_name,
+                                            "units" => ^type,
+                                            "min_value" => ^min_value,
+                                            "max_value" => ^max_value
+                                          } ->
       {:ok, %{short_name: short_name, units: type, min_value: min_value, max_value: max_value}}
     end)
 
     expected_event_text_initial = "Value: " <> to_string(graph_value) <> " " <> type
+
     Angel.Events.Mock
     |> expect(:create_event, fn %{for_graph: ^short_name, text: ^expected_event_text_initial} ->
       {:ok, %{}}
     end)
 
     Angel.Repo.Mock
-    |> expect(:query, fn "INSERT INTO metrics(timestamp, name, value) VALUES (NOW(), $1, $2);", [^short_name, ^graph_value] ->
+    |> expect(:query, fn "INSERT INTO metrics(timestamp, name, value) VALUES (NOW(), $1, $2);",
+                         [^short_name, ^graph_value] ->
       {:ok, %{}}
     end)
 
-    conn = post(conn, "/api/v1/metric", %{short_name: short_name, graph_value: graph_value, type: type, min_value: min_value, max_value: max_value})
+    conn =
+      post(conn, "/api/v1/metric", %{
+        short_name: short_name,
+        graph_value: graph_value,
+        type: type,
+        min_value: min_value,
+        max_value: max_value
+      })
+
     assert json_response(conn, 201) == %{"message" => "Data sent to TimescaleDB"}
   end
 
@@ -309,7 +472,14 @@ defmodule AngelWeb.MetricControllerTest do
     type = "g"
     reporter = "test_reporter"
 
-    conn = post(conn, "/api/v1/metric", %{short_name: short_name, graph_value: graph_value, type: type, reporter: reporter})
+    conn =
+      post(conn, "/api/v1/metric", %{
+        short_name: short_name,
+        graph_value: graph_value,
+        type: type,
+        reporter: reporter
+      })
+
     assert json_response(conn, 201) == %{"message" => "Data sent to TimescaleDB"}
 
     sanitized_short_name = "testmetricwithdangerouscharacters"
@@ -319,7 +489,12 @@ defmodule AngelWeb.MetricControllerTest do
     assert graph.short_name == sanitized_short_name
 
     # Verify data in the metrics table
-    {:ok, %{rows: rows}} = Angel.Repo.query("SELECT name, value FROM metrics WHERE name = $1 AND value = $2;", [sanitized_short_name, graph_value])
+    {:ok, %{rows: rows}} =
+      Angel.Repo.query("SELECT name, value FROM metrics WHERE name = $1 AND value = $2;", [
+        sanitized_short_name,
+        graph_value
+      ])
+
     assert length(rows) == 1
     assert List.first(rows) == [sanitized_short_name, graph_value]
   end

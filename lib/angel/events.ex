@@ -39,10 +39,11 @@ defmodule Angel.Events do
   def get_event!(id), do: Repo.get!(Event, id)
 
   def for_graph(short_name) do
-    Repo.all(from e in Angel.Events.Event,
-      where: e.for_graph == ^short_name,
-      order_by: [desc: :inserted_at],
-      limit: 10
+    Repo.all(
+      from e in Angel.Events.Event,
+        where: e.for_graph == ^short_name,
+        order_by: [desc: :inserted_at],
+        limit: 10
     )
   end
 

@@ -46,7 +46,9 @@ defmodule Angel.Repo.Migrations.CreateTimescaledbAggregates do
 
     # Add retention policies
     execute "SELECT add_retention_policy('metrics', INTERVAL '1 day', if_not_exists => TRUE);"
+
     execute "SELECT add_retention_policy('metrics_1min', INTERVAL '1 week', if_not_exists => TRUE);"
+
     execute "SELECT add_retention_policy('metrics_1hour', INTERVAL '1 month', if_not_exists => TRUE);"
 
     # Create the get_metrics function

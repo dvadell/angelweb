@@ -3,8 +3,6 @@ defmodule AngelWeb.IndexLiveTest do
 
   import Phoenix.LiveViewTest
 
-  
-
   describe "Index" do
     test "lists all graphs", %{conn: conn} do
       {:ok, _index_live, html} = live(conn, ~p"/graphs")

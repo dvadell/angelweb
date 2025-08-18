@@ -132,9 +132,11 @@ defmodule Angel.Graphs do
 
   def create_or_update_graph(attrs) do
     sanitized_attrs = Map.update!(attrs, "short_name", &sanitize_short_name/1)
+
     case Repo.get_by(Index, short_name: sanitized_attrs["short_name"]) do
       nil ->
         create_index(sanitized_attrs)
+
       graph ->
         update_index(graph, sanitized_attrs)
     end
