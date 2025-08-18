@@ -2,6 +2,7 @@ defmodule AngelWeb.IndexLive.Show do
   use AngelWeb, :live_view
   alias Angel.Graphs
   alias Jason
+  alias Phoenix.PubSub
 
   @impl true
   def mount(%{"id" => graph_name}, _session, socket) do
@@ -9,6 +10,8 @@ defmodule AngelWeb.IndexLive.Show do
 
     # Create the form changeset
     changeset = Angel.Graphs.Index.changeset(graph, %{})
+
+    if connected?(socket), do: Phoenix.PubSub.subscribe(Angel.PubSub, "new_metric:#{graph_name}")
 
     {:ok,
       socket
@@ -184,6 +187,16 @@ defmodule AngelWeb.IndexLive.Show do
         {:noreply, push_event(socket, "chart:data_loaded", %{data: updated_data})}
       {:error, error} ->
         {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_info({:new_metric, metric, timestamp}, socket) do
+    if socket.assigns.chart_is_playing do
+      # Push the new data point to the client
+      {:noreply, push_event(socket, "chart:new_data", %{value: metric.graph_value, timestamp: DateTime.to_unix(timestamp, :millisecond)})}
+    else
+      {:noreply, socket}
     end
   end
 end

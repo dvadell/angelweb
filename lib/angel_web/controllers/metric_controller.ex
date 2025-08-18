@@ -5,6 +5,7 @@ defmodule AngelWeb.MetricController do
   alias Angel.Repo
   alias Jason
   alias DateTime
+  alias Phoenix.PubSub
 
   def create(conn, metric_params) do
     short_name = Map.get(metric_params, "short_name")
@@ -29,6 +30,8 @@ defmodule AngelWeb.MetricController do
       end
 
       Repo.query("INSERT INTO metrics(timestamp, name, value) VALUES (NOW(), $1, $2);", [graph.short_name, metric.graph_value])
+      current_timestamp = DateTime.utc_now()
+      Phoenix.PubSub.broadcast(Angel.PubSub, "new_metric:#{graph.short_name}", {:new_metric, metric, current_timestamp})
       conn
       |> put_status(:created)
       |> json(%{message: "Data sent to TimescaleDB"})

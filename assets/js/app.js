@@ -46,6 +46,12 @@ let ChartHook = {
     // Listen for chart data events
     window.addEventListener("phx:chart:data_loaded", this.handleDataLoaded);
     
+    this.handleNewData = (e) => {
+      console.log("Hook received new data event:", e.detail);
+      this.appendDataToChart(e.detail.value, e.detail.timestamp);
+    };
+    window.addEventListener("phx:chart:new_data", this.handleNewData);
+    
     // Listen for LiveView connection events
     this.handleReconnected = () => {
       console.log('LiveView reconnected, processing queued events');
@@ -119,6 +125,17 @@ let ChartHook = {
     }
     if (this.handleReconnected) {
       window.removeEventListener("phx:page-loading-stop", this.handleReconnected);
+    }
+    if (this.handleNewData) {
+      window.removeEventListener("phx:chart:new_data", this.handleNewData);
+    }
+  },
+
+  appendDataToChart(value, timestamp) {
+    if (this.chart) {
+      this.chart.data.labels.push(timestamp);
+      this.chart.data.datasets[0].data.push(value);
+      this.chart.update();
     }
   },
 
@@ -212,6 +229,7 @@ let ChartHook = {
       },
     });
     
+    window.chart = this.chart;
     console.log('Chart created successfully:', this.chart);
   },
 
