@@ -6,6 +6,7 @@ defmodule AngelWeb.MetricController do
   alias Jason
   alias DateTime
   alias Phoenix.PubSub
+  alias Angel.Metrics # Add this alias
 
   def create(conn, metric_params) do
     short_name = Map.get(metric_params, "short_name")
@@ -46,12 +47,20 @@ defmodule AngelWeb.MetricController do
           :ok
       end
 
-      Repo.query("INSERT INTO metrics(timestamp, name, value) VALUES (NOW(), $1, $2);", [
-        graph.short_name,
-        metric.graph_value
-      ])
+      # Replace raw SQL with Ecto insert
+      current_timestamp = DateTime.utc_now() # Revert to original
+      metrics_changeset = Angel.Metrics.changeset(%Angel.Metrics{}, %{
+        timestamp: current_timestamp,
+        name: graph.short_name,
+        value: metric.graph_value
+      })
 
-      current_timestamp = DateTime.utc_now()
+      case Repo.insert(metrics_changeset) do
+        {:ok, _} -> :ok
+        {:error, e} ->
+          IO.inspect(e, label: "Error inserting metric")
+          {:error, e}
+      end
 
       Phoenix.PubSub.broadcast(
         Angel.PubSub,

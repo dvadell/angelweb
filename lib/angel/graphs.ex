@@ -7,6 +7,7 @@ defmodule Angel.Graphs do
   import Ecto.Query, warn: false
   alias Angel.Repo
   alias Decimal
+  alias Angel.Metrics # Add this alias
 
   alias Angel.Graphs.Index
 
@@ -24,18 +25,20 @@ defmodule Angel.Graphs do
     |> Enum.map(fn graph ->
       latest_metric = get_latest_metric(graph.short_name)
       status = calculate_status(latest_metric, graph.min_value, graph.max_value)
-      IO.inspect({status, latest_metric, graph.min_value, graph.max_value}, label: "DMV: status for metric with min/max")
       Map.put(graph, :status, status)
     end)
   end
 
   defp get_latest_metric(graph_name) do
-    query = "SELECT value FROM metrics WHERE name = $1 ORDER BY timestamp DESC LIMIT 1"
-
-    case Repo.query(query, [graph_name]) do
-      {:ok, %Postgrex.Result{rows: [[value]]}} -> value
-      # No metric found or error
-      _ -> nil
+    Angel.Metrics
+    |> select([m], m.value) # Explicitly select only the 'value' field
+    |> where([m], m.name == ^graph_name)
+    |> order_by([m], desc: m.timestamp)
+    |> limit(1)
+    |> Repo.one()
+    |> case do
+      value when is_number(value) -> value # Change to is_number(value)
+      _ -> nil # No metric found
     end
   end
 
