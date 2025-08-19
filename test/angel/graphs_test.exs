@@ -12,7 +12,10 @@ defmodule Angel.GraphsTest do
 
     test "list_graphs/0 returns all graphs" do
       index = index_fixture()
-      assert Graphs.list_graphs() == [index]
+      [returned_graph] = Graphs.list_graphs()
+      assert returned_graph.id == index.id
+      assert returned_graph.short_name == index.short_name
+      assert returned_graph.status in [:ok, :not_ok, :no_data]
     end
 
     test "get_index!/1 returns the index with given id" do

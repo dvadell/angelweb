@@ -11,16 +11,42 @@ defmodule Angel.Graphs do
   alias Angel.Graphs.Index
 
   @doc """
-  Returns the list of graphs.
+  Returns the list of graphs with their latest status.
 
   ## Examples
 
       iex> list_graphs()
-      [%Index{}, ...]
+      [%Index{status: :ok}, ...]
 
   """
   def list_graphs do
     Repo.all(Index)
+    |> Enum.map(fn graph ->
+      latest_metric = get_latest_metric(graph.short_name)
+      status = calculate_status(latest_metric, graph.min_value, graph.max_value)
+      IO.inspect({status, latest_metric, graph.min_value, graph.max_value}, label: "DMV: status for metric with min/max")
+      Map.put(graph, :status, status)
+    end)
+  end
+
+  defp get_latest_metric(graph_name) do
+    query = "SELECT value FROM metrics WHERE name = $1 ORDER BY timestamp DESC LIMIT 1"
+
+    case Repo.query(query, [graph_name]) do
+      {:ok, %Postgrex.Result{rows: [[value]]}} -> value
+      # No metric found or error
+      _ -> nil
+    end
+  end
+
+  defp calculate_status(latest_metric, min_value, max_value) do
+    cond do
+      is_nil(latest_metric) -> :no_data
+      is_nil(min_value) && latest_metric <= max_value -> :ok
+      is_nil(max_value) && latest_metric >= min_value -> :ok
+      latest_metric >= min_value  && latest_metric <= max_value -> :ok
+      true -> :not_ok
+    end
   end
 
   @doc """

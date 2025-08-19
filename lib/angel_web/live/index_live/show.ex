@@ -57,7 +57,13 @@ defmodule AngelWeb.IndexLive.Show do
         graph_type = graph.graph_type
 
         empty_data = [
-          %{datapoints: [], target: graph_name, min_value: min_value, max_value: max_value, graph_type: graph_type}
+          %{
+            datapoints: [],
+            target: graph_name,
+            min_value: min_value,
+            max_value: max_value,
+            graph_type: graph_type
+          }
         ]
 
         {:noreply, push_event(socket, "chart:data_loaded", %{data: empty_data})}
@@ -136,7 +142,11 @@ defmodule AngelWeb.IndexLive.Show do
 
           updated_data =
             Enum.map(new_data, fn item ->
-              Map.merge(item, %{min_value: min_value, max_value: max_value, graph_type: graph_type})
+              Map.merge(item, %{
+                min_value: min_value,
+                max_value: max_value,
+                graph_type: graph_type
+              })
             end)
 
           {:noreply, push_event(socket, "chart:data_loaded", %{data: updated_data})}

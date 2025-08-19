@@ -15,7 +15,7 @@ defmodule AngelWeb.MetricController do
     graph_type = Map.get(metric_params, "graph_type")
 
     with changeset <-
-           AngelWeb.Schemas.Metric.changeset(%AngelWeb.Schemas.Metric{}, metric_params),
+           AngelWeb.Schemas.Graph.changeset(%AngelWeb.Schemas.Graph{}, metric_params),
          true <- changeset.valid?,
          metric <- Ecto.Changeset.apply_changes(changeset) do
       graph_params = %{

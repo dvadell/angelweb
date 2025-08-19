@@ -1,4 +1,4 @@
-defmodule AngelWeb.Schemas.Metric do
+defmodule AngelWeb.Schemas.Graph do
   use Ecto.Schema
   import Ecto.Changeset
 

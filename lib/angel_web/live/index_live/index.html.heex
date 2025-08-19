@@ -3,6 +3,15 @@
   <%= Enum.map(@graphs, fn g -> %>
     <li>
       <a href={"/graphs/#{g.short_name}"}>
+        <%= if g.status == :ok do %>
+          ✅
+        <% end %>
+        <%= if g.status == :not_ok do %>
+          ❌
+        <% end %>
+        <%= if g.status == :no_data do %>
+          ❓
+        <% end %>
         {g.short_name}
       </a>
     </li>
