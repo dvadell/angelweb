@@ -169,6 +169,10 @@ let ChartHook = {
       return;
     }
 
+    const dataPoints = data[0].datapoints;
+    const lastTimestamp = dataPoints.length > 0 ? dataPoints[dataPoints.length - 1][1] : Date.now();
+    
+
     // Destroy existing chart if any
     if (this.chart) {
       this.chart.destroy();
@@ -189,7 +193,9 @@ let ChartHook = {
       options: {
         animation: false,
         scales: {
-          x: { type: 'timestack' },
+          x: {
+            type: 'timestack'
+          },
           y: {
             ticks: {
               callback: function(value, index, ticks) {
@@ -224,14 +230,14 @@ let ChartHook = {
               wheel: { enabled: true },
               pinch: { enabled: true },
               mode: 'x',
-              onZoom: (context) => {
+              onZoomComplete: (context) => {
                 this.handleZoom(context);
               }
             },
             pan: { 
               enabled: true,
               mode: 'x',
-              onPan: (context) => {
+              onPanComplete: (context) => {
                 this.handlePan(context);
               }
             }
