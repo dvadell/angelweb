@@ -47,18 +47,4 @@ This project exposes the following API endpoints:
     }
     ```
 
-### `GET /api/v1/graphs/:name`
-
-*   **Description**: This endpoint is used for fetching metric data for a specific graph within a time range.
-*   **Method**: `GET`
-*   **URL Parameters**:
-    *   `name`: The short name of the graph.
-*   **Query Parameters**:
-    *   `start_time`: The start of the time range in ISO8601 format (e.g., `2023-01-01T00:00:00Z`).
-    *   `end_time`: The end of the time range in ISO8601 format (e.g., `2023-01-02T00:00:00Z`).
-*   **Example Request**:
-    ```
-    GET /api/v1/graphs/example_metric?start_time=2023-01-01T00:00:00Z&end_time=2023-01-02T00:00:00Z
-    ```
-
 To "deploy" see https://dev.to/hlappa/development-environment-for-elixir-phoenix-with-docker-and-docker-compose-2g17

@@ -79,23 +79,4 @@ defmodule AngelWeb.MetricController do
     end
   end
 
-  def show(conn, %{"name" => name, "start_time" => start_time_str, "end_time" => end_time_str}) do
-    with {:ok, start_time, _} <- DateTime.from_iso8601(start_time_str),
-         {:ok, end_time, _} <- DateTime.from_iso8601(end_time_str),
-         {:ok, data} <-
-           Application.get_env(:angel, Angel.Graphs).fetch_timescaledb_data(
-             name,
-             start_time,
-             end_time
-           ) do
-      conn
-      |> put_status(:ok)
-      |> json(data)
-    else
-      _ ->
-        conn
-        |> put_status(:bad_request)
-        |> json(%{error: "Invalid parameters or data not found"})
-    end
   end
-end
