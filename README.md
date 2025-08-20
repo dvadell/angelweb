@@ -28,7 +28,7 @@ docker compose run -e MIX_ENV=test web mix test
 
 ### `GET /graphs`
 
-*   **Description**: A web interface for displaying stored metric graphs. It provides a visual representation of the collected data. This is a Phoenix LiveView page.
+*   **Description**: A web interface for displaying stored metric graphs. It provides a visual representation of the collected data, including the status of each graph (e.g., whether the latest metric value is within the defined min/max range). This is a Phoenix LiveView page.
 
 ## API Endpoints
 
@@ -43,8 +43,7 @@ This project exposes the following API endpoints:
     ```json
     {
       "short_name": "example_metric",
-      "graph_value": 43,
-      "reporter": "dummy_reporter"
+      "value": 43
     }
     ```
 

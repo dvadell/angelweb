@@ -14,8 +14,8 @@ You can find them in:
 Schemas define the structure of your data and how it interacts with the database (using Ecto).
 You can find them in:
 
-- `lib/angel/` (for core application schemas)
-- `lib/angel_web/schemas/` (for web-specific schemas, if any)
+- `lib/angel/` (for core application schemas, e.g. `Angel.Graphs`, `Angel.Metrics`)
+- `lib/angel_web/schemas/` (for web-specific schemas, e.g. `AngelWeb.Schemas.Graph`)
 
 ## Views
 
