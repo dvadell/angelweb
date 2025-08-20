@@ -31,6 +31,12 @@ services:
       - .:/app
       - /app/_build
       - /app/deps
+  forecasting:
+    build: ./forecasting
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@timescaledb:5432/angel
+    depends_on:
+      - db
 volumes:
   pgdata:
   timescaledb:
