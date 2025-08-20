@@ -64,16 +64,22 @@
   <canvas phx-hook="Chart" id="myChart"></canvas>
 </div>
 
-<h1 phx-click="toggle_events" class="text-4xl font-bold text-gray-800 mb-4 cursor-pointer">
+<h1 phx-click="toggle_events" class="text-2xl font-bold text-gray-800 mb-4 cursor-pointer flex items-center">
   <span class="mr-2"><%= if @show_events, do: "▼", else: "▶" %></span>Events
 </h1>
-<%= if @show_events do %>
-  <ul>
-    <%= Enum.map(@events, fn e -> %>
-      <li>{Map.get(e, :inserted_at)} : {Map.get(e, :text)} {Map.get(e, :units)}</li>
-    <% end) %>
+<div :if={@show_events} id="events-list" class="mt-4" phx-hook="LocalTime">
+  <ul class="divide-y divide-gray-200 rounded-lg border">
+    <%= for e <- @events do %>
+      <li class="p-3 flex justify-between items-center">
+        <span class="font-medium text-gray-800"><%= Map.get(e, :text) %> <%= Map.get(e, :units) %></span>
+        <span class="text-gray-600 text-sm" data-timestamp={Map.get(e, :inserted_at)}><%= Map.get(e, :inserted_at) %></span>
+      </li>
+    <% end %>
+    <li :if={@events == []} class="p-3 text-center text-gray-500">
+      No events found.
+    </li>
   </ul>
-<% end %>
+</div>
 
 <h1 phx-click="toggle_notes" class="text-4xl font-bold text-gray-800 mb-4 cursor-pointer">
   <span class="mr-2"><%= if @show_notes, do: "▼", else: "▶" %></span>Notes

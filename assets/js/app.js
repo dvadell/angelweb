@@ -338,8 +338,29 @@ let ChartHook = {
   }
 }
 
+let LocalTimeHook = {
+  mounted() { this.formatTime() },
+  updated() { this.formatTime() },
+  formatTime() {
+    this.el.querySelectorAll('[data-timestamp]').forEach(el => {
+      const utcTime = el.dataset.timestamp
+      if (!utcTime) { return }
+      const date = new Date(utcTime)
+      const options = {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+      }
+      el.textContent = date.toLocaleString(undefined, options)
+    })
+  }
+}
+
 let Hooks = {
-  Chart: ChartHook
+  Chart: ChartHook,
+  LocalTime: LocalTimeHook
 }
 
 let liveSocket = new LiveSocket("/live", Socket, {
