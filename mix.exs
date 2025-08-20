@@ -60,7 +60,8 @@ defmodule Angel.MixProject do
       {:bandit, "~> 1.2"},
       {:httpoison, "~> 2.0"},
       {:earmark, "~> 1.4"},
-      {:mox, "~> 1.0", only: :test}
+      {:mox, "~> 1.0", only: :test},
+      {:sobelow, "~> 0.13.0", only: [:dev, :test], runtime: false}
     ]
   end
 
