@@ -29,45 +29,10 @@ defmodule AngelWeb.IndexLive.Show do
 
   @impl true
   def handle_event("get_initial_data", _params, socket) do
-    graph_name = socket.assigns.graph_name
-
     end_time = DateTime.utc_now()
     # 24 hours
     start_time = DateTime.add(end_time, -86_400, :second)
-
-    case Angel.Graphs.fetch_timescaledb_data(graph_name, start_time, end_time) do
-      {:ok, data} ->
-        graph = socket.assigns.graph
-        min_value = graph.min_value
-        max_value = graph.max_value
-        graph_type = graph.graph_type
-
-        updated_data =
-          Enum.map(data, fn item ->
-            Map.merge(item, %{min_value: min_value, max_value: max_value, graph_type: graph_type})
-          end)
-
-        {:noreply, push_event(socket, "chart:data_loaded", %{data: updated_data})}
-
-      {:error, _e} ->
-        # Send empty data structure on error
-        graph = socket.assigns.graph
-        min_value = graph.min_value
-        max_value = graph.max_value
-        graph_type = graph.graph_type
-
-        empty_data = [
-          %{
-            datapoints: [],
-            target: graph_name,
-            min_value: min_value,
-            max_value: max_value,
-            graph_type: graph_type
-          }
-        ]
-
-        {:noreply, push_event(socket, "chart:data_loaded", %{data: empty_data})}
-    end
+    {:noreply, fetch_and_push_data(socket, start_time, end_time)}
   end
 
   @impl true
@@ -98,6 +63,34 @@ defmodule AngelWeb.IndexLive.Show do
   @impl true
   def handle_event("toggle_chart_play", _params, socket) do
     {:noreply, assign(socket, :chart_is_playing, not socket.assigns.chart_is_playing)}
+  end
+
+  @impl true
+  def handle_event("set_range", %{"range" => "hour"}, socket) do
+    end_time = DateTime.utc_now()
+    start_time = DateTime.add(end_time, -3600, :second)
+    {:noreply, fetch_and_push_data(socket, start_time, end_time)}
+  end
+
+  @impl true
+  def handle_event("set_range", %{"range" => "day"}, socket) do
+    end_time = DateTime.utc_now()
+    start_time = DateTime.add(end_time, -86_400, :second)
+    {:noreply, fetch_and_push_data(socket, start_time, end_time)}
+  end
+
+  @impl true
+  def handle_event("set_range", %{"range" => "week"}, socket) do
+    end_time = DateTime.utc_now()
+    start_time = DateTime.add(end_time, -604_800, :second)
+    {:noreply, fetch_and_push_data(socket, start_time, end_time)}
+  end
+
+  @impl true
+  def handle_event("set_range", %{"range" => "month"}, socket) do
+    end_time = DateTime.utc_now()
+    start_time = DateTime.add(end_time, -2_592_000, :second)
+    {:noreply, fetch_and_push_data(socket, start_time, end_time)}
   end
 
   @impl true
@@ -246,6 +239,44 @@ defmodule AngelWeb.IndexLive.Show do
        })}
     else
       {:noreply, socket}
+    end
+  end
+
+  defp fetch_and_push_data(socket, start_time, end_time) do
+    graph_name = socket.assigns.graph_name
+
+    case Angel.Graphs.fetch_timescaledb_data(graph_name, start_time, end_time) do
+      {:ok, data} ->
+        graph = socket.assigns.graph
+        min_value = graph.min_value
+        max_value = graph.max_value
+        graph_type = graph.graph_type
+
+        updated_data =
+          Enum.map(data, fn item ->
+            Map.merge(item, %{min_value: min_value, max_value: max_value, graph_type: graph_type})
+          end)
+
+        push_event(socket, "chart:data_loaded", %{data: updated_data})
+
+      {:error, _e} ->
+        # Send empty data structure on error
+        graph = socket.assigns.graph
+        min_value = graph.min_value
+        max_value = graph.max_value
+        graph_type = graph.graph_type
+
+        empty_data = [
+          %{
+            datapoints: [],
+            target: graph_name,
+            min_value: min_value,
+            max_value: max_value,
+            graph_type: graph_type
+          }
+        ]
+
+        push_event(socket, "chart:data_loaded", %{data: empty_data})
     end
   end
 end
