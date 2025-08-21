@@ -164,15 +164,12 @@ defmodule AngelWeb.IndexLive.Show do
   @impl true
   def handle_event(
         "chart_zoomed",
-        %{"visible_range" => %{"min" => min_ms, "max" => max_ms}, "zoom_level" => level},
+        %{"visible_range" => %{"min" => min_ms, "max" => max_ms}, "zoom_level" => _level},
         socket
       ) do
     # Convert milliseconds to DateTime
     min_time = DateTime.from_unix!(trunc(min_ms), :millisecond)
     max_time = DateTime.from_unix!(trunc(max_ms), :millisecond)
-
-    # If zoomed in significantly (showing less than 6 hours), load higher resolution data
-    time_span_hours = DateTime.diff(max_time, min_time, :hour)
 
     # Add small buffer for zoomed data
     # 5 minutes buffer
@@ -196,7 +193,7 @@ defmodule AngelWeb.IndexLive.Show do
 
         {:noreply, push_event(socket, "chart:data_loaded", %{data: updated_data})}
 
-      {:error, error} ->
+      {:error, _error} ->
         {:noreply, socket}
     end
   end
@@ -233,7 +230,7 @@ defmodule AngelWeb.IndexLive.Show do
 
         {:noreply, push_event(socket, "chart:data_loaded", %{data: updated_data})}
 
-      {:error, error} ->
+      {:error, _error} ->
         {:noreply, socket}
     end
   end

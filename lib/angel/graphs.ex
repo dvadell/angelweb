@@ -6,7 +6,6 @@ defmodule Angel.Graphs do
 
   import Ecto.Query, warn: false
   alias Angel.Graphs.Index
-  alias Angel.Metrics # Add this alias
   alias Angel.Repo
   alias Decimal
 
