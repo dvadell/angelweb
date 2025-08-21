@@ -81,22 +81,22 @@ defmodule AngelWeb.IndexLive.Show do
   end
 
   @impl true
-  def handle_event("toggle_form", _, socket) do
+  def handle_event("toggle_form", _params, socket) do
     {:noreply, assign(socket, :show_form, not socket.assigns.show_form)}
   end
 
   @impl true
-  def handle_event("toggle_events", _, socket) do
+  def handle_event("toggle_events", _params, socket) do
     {:noreply, assign(socket, :show_events, not socket.assigns.show_events)}
   end
 
   @impl true
-  def handle_event("toggle_notes", _, socket) do
+  def handle_event("toggle_notes", _params, socket) do
     {:noreply, assign(socket, :show_notes, not socket.assigns.show_notes)}
   end
 
   @impl true
-  def handle_event("toggle_chart_play", _, socket) do
+  def handle_event("toggle_chart_play", _params, socket) do
     {:noreply, assign(socket, :chart_is_playing, not socket.assigns.chart_is_playing)}
   end
 
@@ -129,8 +129,8 @@ defmodule AngelWeb.IndexLive.Show do
         %{"start_time" => start_time_str, "end_time" => end_time_str},
         socket
       ) do
-    with {:ok, start_time, _} <- DateTime.from_iso8601(start_time_str),
-         {:ok, end_time, _} <- DateTime.from_iso8601(end_time_str) do
+    with {:ok, start_time, _utc_offset} <- DateTime.from_iso8601(start_time_str),
+         {:ok, end_time, _utc_offset} <- DateTime.from_iso8601(end_time_str) do
       graph_name = socket.assigns.graph_name
 
       case Angel.Graphs.fetch_timescaledb_data(graph_name, start_time, end_time) do

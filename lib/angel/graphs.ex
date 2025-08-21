@@ -40,7 +40,7 @@ defmodule Angel.Graphs do
     |> Repo.one()
     |> case do
       value when is_number(value) -> value
-      _ -> nil # No metric found
+      _no_metric -> nil
     end
   end
 
