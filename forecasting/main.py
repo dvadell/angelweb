@@ -114,8 +114,9 @@ async def forecast_metric(metric_name: str, request: ForecastRequest = ForecastR
         if not await _metric_exists_in_db(metric_name):
             raise HTTPException(status_code=404, detail=f"Metric '{metric_name}' not found.")
         
-        # TODO: Fetch historical data from TimescaleDB
-        # historical_data = fetch_metric_data(metric_name)
+        historical_data = await fetch_metric_data(metric_name)
+        if not historical_data:
+            raise HTTPException(status_code=404, detail=f"No historical data found for metric '{metric_name}'.")
         
         # TODO: Run Prophet forecasting
         # forecast_data = run_prophet_forecast(historical_data, request.hours_ahead, request.confidence_interval)
@@ -231,12 +232,26 @@ async def fetch_metric_data(metric_name: str, hours_back: int = 24 * 7) -> List[
     Returns:
         List of dictionaries with 'timestamp' and 'value' keys
     """
-    # TODO: Implement TimescaleDB query
-    # SELECT time, value FROM metrics 
-    # WHERE metric_name = %s 
-    # AND time >= NOW() - INTERVAL '%s hours'
-    # ORDER BY time ASC
-    pass
+    global db_pool
+    if db_pool is None:
+        raise HTTPException(status_code=500, detail="Database connection not established.")
+
+    try:
+        async with db_pool.acquire() as connection:
+            # Assuming 'metrics' table has 'time', 'value', and 'short_name' columns
+            # and 'short_name' is used to identify the metric.
+            query = """
+            SELECT time, value
+            FROM metrics
+            WHERE short_name = $1
+            AND time >= NOW() - INTERVAL '%s hours'
+            ORDER BY time ASC
+            """ % hours_back # Using f-string for interval as asyncpg doesn't parameterize intervals directly
+            
+            records = await connection.fetch(query, metric_name)
+            return [{"timestamp": r["time"], "value": r["value"]} for r in records]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch historical data for {metric_name}: {str(e)}")
 
 async def run_prophet_forecast(historical_data: List[Dict], hours_ahead: int, confidence_interval: float):
     """
