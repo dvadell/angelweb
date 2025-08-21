@@ -34,13 +34,22 @@ class ForecastResponse(BaseModel):
     model_accuracy: float
     last_updated: datetime
 
-@app.on_event("startup")
-async def startup_event():
-    await connect_to_timescaledb()
+from contextlib import asynccontextmanager
 
-@app.on_event("shutdown")
-async def shutdown_event():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    await connect_to_timescaledb()
+    yield
+    # Shutdown
     await close_timescaledb_connection()
+
+app = FastAPI(
+    title="Forecasting Service",
+    description="Time series forecasting and anomaly detection for server metrics",
+    version="1.0.0",
+    lifespan=lifespan
+)
 
 @app.get("/health")
 async def health_check():

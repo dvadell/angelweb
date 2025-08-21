@@ -26,7 +26,8 @@ async def test_list_available_metrics_unit():
 async def test_health_check():
     """Tests the /health endpoint."""
     import httpx # Import httpx here as it's only needed for this test
-    async with httpx.AsyncClient(app=app, base_url="http://test") as client:
+    from httpx import ASGITransport
+    async with httpx.AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.get("/health")
     
     assert response.status_code == 200
