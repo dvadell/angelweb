@@ -18,8 +18,7 @@ defmodule AngelWeb.MetricControllerTest do
     end)
 
     Angel.Repo.Mock
-    |> expect(:query, fn "INSERT INTO metrics(timestamp, name, value) VALUES (NOW(), $1, $2);",
-                         ["test.metric", 123] ->
+    |> expect(:query, fn "INSERT INTO metrics(timestamp, name, value) VALUES (NOW(), $1, $2);", ["test.metric", 123] ->
       {:ok, %{}}
     end)
 
@@ -51,8 +50,7 @@ defmodule AngelWeb.MetricControllerTest do
     end)
 
     Angel.Repo.Mock
-    |> expect(:query, fn "INSERT INTO metrics(timestamp, name, value) VALUES (NOW(), $1, $2);",
-                         ["test.metric", 123] ->
+    |> expect(:query, fn "INSERT INTO metrics(timestamp, name, value) VALUES (NOW(), $1, $2);", ["test.metric", 123] ->
       {:ok, %{}}
     end)
 
@@ -97,8 +95,7 @@ defmodule AngelWeb.MetricControllerTest do
     end)
 
     Angel.Repo.Mock
-    |> expect(:query, fn "INSERT INTO metrics(timestamp, name, value) VALUES (NOW(), $1, $2);",
-                         ["test.metric", 123] ->
+    |> expect(:query, fn "INSERT INTO metrics(timestamp, name, value) VALUES (NOW(), $1, $2);", ["test.metric", 123] ->
       {:ok, %{}}
     end)
 

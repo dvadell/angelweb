@@ -71,8 +71,10 @@
   <ul class="divide-y divide-gray-200 rounded-lg border">
     <%= for e <- @events do %>
       <li class="p-3 flex justify-between items-center">
-        <span class="font-medium text-gray-800"><%= Map.get(e, :text) %> <%= Map.get(e, :units) %></span>
-        <span class="text-gray-600 text-sm" data-timestamp={Map.get(e, :inserted_at)}><%= Map.get(e, :inserted_at) %></span>
+        <span class="font-medium text-gray-800">{Map.get(e, :text)} {Map.get(e, :units)}</span>
+        <span class="text-gray-600 text-sm" data-timestamp={Map.get(e, :inserted_at)}>
+          {Map.get(e, :inserted_at)}
+        </span>
       </li>
     <% end %>
     <li :if={@events == []} class="p-3 text-center text-gray-500">

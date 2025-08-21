@@ -1,4 +1,3 @@
-
 defmodule Angel.MetricsFixtures do
   @moduledoc """
   This module defines test helpers for creating

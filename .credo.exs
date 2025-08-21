@@ -12,7 +12,7 @@
       name: "default",
       # These are the files included in the analysis:
       files: %{
-        included: [ "lib/", "src/", "test/", ],
+        included: ["lib/", "src/", "test/"],
         excluded: [~r"/_build/", ~r"/deps/", ~r"/node_modules/"]
       },
       #
@@ -65,8 +65,7 @@
           # You can customize the priority of any check
           # Priority values are: `low, normal, high, higher`
           #
-          {Credo.Check.Design.AliasUsage,
-           [priority: :low, if_nested_deeper_than: 2, if_called_more_often_than: 0]},
+          {Credo.Check.Design.AliasUsage, [priority: :low, if_nested_deeper_than: 2, if_called_more_often_than: 0]},
           {Credo.Check.Design.TagFIXME, []},
           {Credo.Check.Design.SkipTestWithoutComment, []},
 
@@ -143,7 +142,7 @@
           {Credo.Check.Warning.UnusedRegexOperation, []},
           {Credo.Check.Warning.UnusedStringOperation, []},
           {Credo.Check.Warning.UnusedTupleOperation, []},
-          {Credo.Check.Warning.UnsafeExec, []},
+          {Credo.Check.Warning.UnsafeExec, []}
         ],
         disabled: [
           #
@@ -180,4 +179,3 @@
     }
   ]
 }
-

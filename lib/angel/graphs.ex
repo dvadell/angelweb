@@ -22,7 +22,7 @@ defmodule Angel.Graphs do
   """
   def list_graphs do
     Index
-    |> Repo.all
+    |> Repo.all()
     |> Enum.map(fn graph ->
       latest_metric = get_latest_metric(graph.short_name)
       status = calculate_status(latest_metric, graph.min_value, graph.max_value)
@@ -32,7 +32,8 @@ defmodule Angel.Graphs do
 
   defp get_latest_metric(graph_name) do
     Angel.Metrics
-    |> select([m], m.value) # Explicitly select only the 'value' field
+    # Explicitly select only the 'value' field
+    |> select([m], m.value)
     |> where([m], m.name == ^graph_name)
     |> order_by([m], desc: m.timestamp)
     |> limit(1)
@@ -48,7 +49,7 @@ defmodule Angel.Graphs do
       is_nil(latest_metric) -> :no_data
       is_nil(min_value) && latest_metric <= max_value -> :ok
       is_nil(max_value) && latest_metric >= min_value -> :ok
-      latest_metric >= min_value  && latest_metric <= max_value -> :ok
+      latest_metric >= min_value && latest_metric <= max_value -> :ok
       true -> :not_ok
     end
   end
