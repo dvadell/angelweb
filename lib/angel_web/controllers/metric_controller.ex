@@ -3,7 +3,7 @@ defmodule AngelWeb.MetricController do
   alias Angel.Events
   alias Angel.Graphs
   alias Angel.Repo
-  alias AngelWeb.Schemas
+  alias AngelWeb.Schemas.IncomingMetricPayload
   alias DateTime
   alias Jason
 
@@ -25,7 +25,7 @@ defmodule AngelWeb.MetricController do
      end
 
     with changeset <-
-           Schemas.Graph.changeset(%AngelWeb.Schemas.Graph{}, metric_params),
+           IncomingMetricPayload.changeset(%IncomingMetricPayload{}, metric_params),
          true <- changeset.valid?,
          metric <- Ecto.Changeset.apply_changes(changeset) do
       graph_params = %{

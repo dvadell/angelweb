@@ -1,11 +1,12 @@
-defmodule AngelWeb.Schemas.Graph do
+defmodule AngelWeb.Schemas.IncomingMetricPayload do
   @moduledoc """
-  Schema for the `graphs` table (graphs)
+  An embedded Ecto schema used to validate and cast incoming metric payloads
+  from the `MetricController`. It is not backed by a database table.
   """
   use Ecto.Schema
   import Ecto.Changeset
 
-  schema "metric" do
+  embedded_schema do
     field :short_name, :string
     field :units, :string, default: ""
     field :graph_value, :integer
