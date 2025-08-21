@@ -1,3 +1,5 @@
+import os
+import asyncpg
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from datetime import datetime, timedelta
@@ -9,6 +11,9 @@ app = FastAPI(
     description="Time series forecasting and anomaly detection for server metrics",
     version="1.0.0"
 )
+
+# Global database connection pool
+db_pool = None
 
 # Pydantic models for request/response validation
 class ForecastRequest(BaseModel):
@@ -29,27 +34,42 @@ class ForecastResponse(BaseModel):
     model_accuracy: float
     last_updated: datetime
 
+@app.on_event("startup")
+async def startup_event():
+    await connect_to_timescaledb()
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    await close_timescaledb_connection()
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint for Docker/Phoenix to verify service is running"""
     return {"status": "healthy", "service": "forecasting", "timestamp": datetime.now()}
 
+async def _get_available_metrics_from_db() -> List[str]:
+    """
+    Helper function to query distinct metric names from the 'graphs' table.
+    """
+    global db_pool
+    if db_pool is None:
+        raise HTTPException(status_code=500, detail="Database connection not established.")
+
+    try:
+        async with db_pool.acquire() as connection:
+            metrics = await connection.fetch("SELECT DISTINCT short_name FROM graphs ORDER BY short_name")
+            return [m['short_name'] for m in metrics]
+    except Exception as e:
+        # Re-raise as HTTPException to be caught by FastAPI's error handling
+        raise HTTPException(status_code=500, detail=f"Failed to fetch available metrics from DB: {str(e)}")
+
 @app.get("/metrics")
 async def list_available_metrics():
     """
-    Return list of metrics available for forecasting
-    TODO: Query TimescaleDB to get actual metric names from your metrics table
+    Return list of metrics available for forecasting by querying the 'graphs' table.
     """
-    # DUMMY DATA - replace with actual query to TimescaleDB
-    dummy_metrics = [
-        "server_response_time_ms",
-        "cpu_usage_percent", 
-        "memory_usage_mb",
-        "network_latency_ms",
-        "disk_io_ops_per_sec",
-        "active_connections"
-    ]
-    return {"available_metrics": dummy_metrics}
+    available_metrics = await _get_available_metrics_from_db()
+    return {"available_metrics": available_metrics}
 
 @app.post("/forecast/{metric_name}")
 async def forecast_metric(metric_name: str, request: ForecastRequest = ForecastRequest()):
@@ -151,13 +171,30 @@ async def detect_anomalies(metric_name: str, hours_back: int = 24):
         "analysis_timestamp": current_time
     }
 
-# TODO: Database connection functions
 async def connect_to_timescaledb():
     """
-    Initialize database connection pool
-    Use environment variables for connection string
+    Initialize database connection pool using DATABASE_URL from environment variables.
     """
-    pass
+    global db_pool
+    try:
+        db_url = os.getenv("DATABASE_URL")
+        if not db_url:
+            raise ValueError("DATABASE_URL environment variable not set.")
+        db_pool = await asyncpg.create_pool(db_url)
+        print("Successfully connected to TimescaleDB.")
+    except Exception as e:
+        print(f"Failed to connect to TimescaleDB: {e}")
+        # Depending on desired behavior, you might want to re-raise or exit here
+        raise
+
+async def close_timescaledb_connection():
+    """
+    Close the database connection pool.
+    """
+    global db_pool
+    if db_pool:
+        await db_pool.close()
+        print("TimescaleDB connection pool closed.")
 
 async def fetch_metric_data(metric_name: str, hours_back: int = 24 * 7) -> List[Dict]:
     """
