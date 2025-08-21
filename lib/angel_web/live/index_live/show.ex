@@ -97,6 +97,7 @@ defmodule AngelWeb.IndexLive.Show do
   def handle_event("save", %{"index" => graph_params}, socket) do
     # Add the short_name to the params since it's needed for save
     graph_params = Map.put(graph_params, "short_name", socket.assigns.graph_name)
+    graph_params = Map.update(graph_params, "notes", "", &HtmlSanitizeEx.markdown_html/1)
 
     case Graphs.create_or_update_graph(graph_params) do
       {:ok, graph} ->
