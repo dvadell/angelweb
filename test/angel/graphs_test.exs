@@ -59,4 +59,23 @@ defmodule Angel.GraphsTest do
       assert %Ecto.Changeset{} = Graphs.change_index(index)
     end
   end
+
+  describe "fetch_timescaledb_data/3" do
+    import Angel.GraphsFixtures
+    import Angel.MetricsFixtures
+
+    test "returns data points for a given graph and time range" do
+      graph = index_fixture(%{short_name: "my_graph"})
+      metric_fixture(%{name: "my_graph", value: 10.0, timestamp: ~U[2025-08-21 12:00:00Z]})
+      metric_fixture(%{name: "my_graph", value: 20.0, timestamp: ~U[2025-08-21 12:01:00Z]})
+
+      start_time = ~U[2025-08-21 11:59:00Z]
+      end_time = ~U[2025-08-21 12:02:00Z]
+
+      {:ok, result} = Graphs.fetch_timescaledb_data(graph.short_name, start_time, end_time)
+
+      assert [%{target: "my_graph", datapoints: datapoints}] = result
+      assert length(datapoints) == 2
+    end
+  end
 end
