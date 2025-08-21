@@ -58,7 +58,7 @@ defmodule AngelWeb.MetricController do
       })
 
       case Repo.insert(metrics_changeset) do
-        {:ok, _} -> :ok
+        {:ok, _res} -> :ok
         {:error, e} ->
           Logger.error("Error inserting metric: #{inspect(e)}")
           {:error, e}
@@ -74,7 +74,7 @@ defmodule AngelWeb.MetricController do
       |> put_status(:created)
       |> json(%{message: "Data sent to TimescaleDB"})
     else
-      _ ->
+      _error ->
         conn
         |> put_status(:bad_request)
         |> json(%{error: "Invalid data"})
