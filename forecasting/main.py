@@ -72,22 +72,6 @@ async def _get_available_metrics_from_db() -> List[str]:
         # Re-raise as HTTPException to be caught by FastAPI's error handling
         raise HTTPException(status_code=500, detail=f"Failed to fetch available metrics from DB: {str(e)}")
 
-async def _metric_exists_in_db(metric_name: str) -> bool:
-    """
-    Helper function to check if a specific metric name exists in the 'graphs' table.
-    """
-    global db_pool
-    if db_pool is None:
-        raise HTTPException(status_code=500, detail="Database connection not established.")
-
-    try:
-        async with db_pool.acquire() as connection:
-            # Check if any row exists with the given short_name
-            count = await connection.fetchval("SELECT COUNT(*) FROM graphs WHERE short_name = $1", metric_name)
-            return count > 0
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to check metric existence in DB: {str(e)}")
-
 @app.get("/metrics")
 async def list_available_metrics():
     """
@@ -111,8 +95,9 @@ async def forecast_metric(metric_name: str, request: ForecastRequest = ForecastR
     7. Return structured forecast data
     """
     try:
-        if not await _metric_exists_in_db(metric_name):
-            raise HTTPException(status_code=404, detail=f"Metric '{metric_name}' not found.")
+        # TODO: Validate metric exists
+        # if not metric_exists(metric_name):
+        #     raise HTTPException(status_code=404, detail=f"Metric {metric_name} not found")
         
         # TODO: Fetch historical data from TimescaleDB
         # historical_data = fetch_metric_data(metric_name)

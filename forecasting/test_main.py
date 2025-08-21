@@ -34,17 +34,3 @@ async def test_health_check():
     assert response.json()["status"] == "healthy"
     assert response.json()["service"] == "forecasting"
     assert "timestamp" in response.json()
-
-@pytest.mark.asyncio
-async def test_forecast_metric_not_found():
-    """Tests the /forecast/{metric_name} endpoint when metric is not found."""
-    import httpx
-    from httpx import ASGITransport
-    with patch('main._metric_exists_in_db', new_callable=AsyncMock) as mock_metric_exists:
-        mock_metric_exists.return_value = False  # Simulate metric not found
-        async with httpx.AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            response = await client.post("/forecast/non_existent_metric")
-        
-        assert response.status_code == 404
-        assert response.json()["detail"] == "Metric 'non_existent_metric' not found."
-        mock_metric_exists.assert_called_once_with("non_existent_metric")
