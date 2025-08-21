@@ -141,17 +141,17 @@ defmodule Angel.Graphs do
   def fetch_timescaledb_data(graph_name_with_prefix, start_time, end_time) do
     query = "SELECT * FROM get_metrics($1, $2, $3);"
 
+    format_data_from_rows = fn [timestamp, avg_value, _max, _min] ->
+      # The JS graph wants milliseconds since epoch
+      unix_timestamp = DateTime.to_unix(timestamp, :millisecond)
+      # Handle nil values for avg_value, which can happen for empty time buckets.
+      value = if avg_value, do: Decimal.to_float(avg_value), else: nil
+      [value, unix_timestamp]
+    end
+
     case Repo.query(query, [graph_name_with_prefix, start_time, end_time]) do
       {:ok, %Postgrex.Result{rows: rows}} ->
-        datapoints =
-          Enum.map(rows, fn [timestamp, avg_value, _max, _min] ->
-            # The JS graph wants milliseconds since epoch
-            unix_timestamp = DateTime.to_unix(timestamp, :millisecond)
-            # Handle nil values for avg_value, which can happen for empty time buckets.
-            value = if avg_value, do: Decimal.to_float(avg_value), else: nil
-            [value, unix_timestamp]
-          end)
-
+        datapoints = Enum.map(rows, format_data_from_rows)
         {:ok, [%{target: graph_name_with_prefix, datapoints: datapoints}]}
 
       {:error, e} ->

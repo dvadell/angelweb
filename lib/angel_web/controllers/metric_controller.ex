@@ -15,6 +15,15 @@ defmodule AngelWeb.MetricController do
     max_value = Map.get(metric_params, "max_value")
     graph_type = Map.get(metric_params, "graph_type")
 
+    is_within_range? = fn(max, min, value) ->
+      # Check if graph_value is below min_value or above max_value
+      cond do
+        min && value < min -> {:error, "Value #{value} is below min_value #{min}"}
+        max && value > max -> {:error, "Value #{value} is above max_value #{max}"}
+        true -> :ok
+      end
+     end
+
     with changeset <-
            Schemas.Graph.changeset(%AngelWeb.Schemas.Graph{}, metric_params),
          true <- changeset.valid?,
@@ -29,25 +38,11 @@ defmodule AngelWeb.MetricController do
 
       {:ok, graph} = Graphs.create_or_update_graph(graph_params)
 
-      # Check if graph_value is below min_value or above max_value
-      cond do
-        graph.min_value && metric.graph_value < graph.min_value ->
-          Events.create_event(%{
-            for_graph: graph.short_name,
-            text: "Value #{metric.graph_value} is below min_value #{graph.min_value}"
-          })
-
-        graph.max_value && metric.graph_value > graph.max_value ->
-          Events.create_event(%{
-            for_graph: graph.short_name,
-            text: "Value #{metric.graph_value} is above max_value #{graph.max_value}"
-          })
-
-        true ->
-          :ok
+      case is_within_range?.(graph.max_value, graph.min_value, metric.graph_value) do
+        {:error, message} -> Events.create_event(%{for_graph: graph.short_name, text: message})
+        :ok -> nil
       end
 
-      # Replace raw SQL with Ecto insert
       current_timestamp = DateTime.utc_now() # Revert to original
       metrics_changeset = Angel.Metrics.changeset(%Angel.Metrics{}, %{
         timestamp: current_timestamp,
@@ -55,12 +50,7 @@ defmodule AngelWeb.MetricController do
         value: metric.graph_value
       })
 
-      case Repo.insert(metrics_changeset) do
-        {:ok, _res} -> :ok
-        {:error, e} ->
-          Logger.error("Error inserting metric: #{inspect(e)}")
-          {:error, e}
-      end
+      Repo.insert(metrics_changeset)
 
       Phoenix.PubSub.broadcast(
         Angel.PubSub,
