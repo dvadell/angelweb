@@ -1,17 +1,17 @@
 defmodule AngelWeb.IndexLive.Show do
   use AngelWeb, :live_view
   alias Angel.Graphs
+  alias Angel.Graphs.Index
   alias Jason
-  alias Phoenix.PubSub
 
   @impl true
   def mount(%{"id" => graph_name}, _session, socket) do
     graph =
       Graphs.get_by_short_name(graph_name) ||
-        %Angel.Graphs.Index{short_name: graph_name, title: "", notes: ""}
+        %Index{short_name: graph_name, title: "", notes: ""}
 
     # Create the form changeset
-    changeset = Angel.Graphs.Index.changeset(graph, %{})
+    changeset = Index.changeset(graph, %{})
 
     if connected?(socket), do: Phoenix.PubSub.subscribe(Angel.PubSub, "new_metric:#{graph_name}")
 
@@ -74,7 +74,7 @@ defmodule AngelWeb.IndexLive.Show do
   def handle_event("validate", %{"index" => graph_params}, socket) do
     changeset =
       socket.assigns.graph
-      |> Angel.Graphs.Index.changeset(graph_params)
+      |> Index.changeset(graph_params)
       |> Map.put(:action, :validate)
 
     {:noreply, assign(socket, :form, to_form(changeset))}
@@ -108,7 +108,7 @@ defmodule AngelWeb.IndexLive.Show do
     case Graphs.create_or_update_graph(graph_params) do
       {:ok, graph} ->
         # Update both the graph and create a new clean form
-        changeset = Angel.Graphs.Index.changeset(graph, graph_params)
+        changeset = Index.changeset(graph, graph_params)
 
         {:noreply,
          socket

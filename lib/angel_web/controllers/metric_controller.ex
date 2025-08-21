@@ -2,11 +2,13 @@ defmodule AngelWeb.MetricController do
   use AngelWeb, :controller
   alias Angel.Events
   alias Angel.Graphs
+  alias Angel.Metrics
   alias Angel.Repo
-  alias Jason
+  alias AngelWeb.Schemas
   alias DateTime
-  alias Phoenix.PubSub
-  alias Angel.Metrics # Add this alias
+  alias Jason
+
+  require Logger
 
   def create(conn, metric_params) do
     short_name = Map.get(metric_params, "short_name")
@@ -16,7 +18,7 @@ defmodule AngelWeb.MetricController do
     graph_type = Map.get(metric_params, "graph_type")
 
     with changeset <-
-           AngelWeb.Schemas.Graph.changeset(%AngelWeb.Schemas.Graph{}, metric_params),
+           Schemas.Graph.changeset(%AngelWeb.Schemas.Graph{}, metric_params),
          true <- changeset.valid?,
          metric <- Ecto.Changeset.apply_changes(changeset) do
       graph_params = %{
@@ -58,7 +60,7 @@ defmodule AngelWeb.MetricController do
       case Repo.insert(metrics_changeset) do
         {:ok, _} -> :ok
         {:error, e} ->
-          IO.inspect(e, label: "Error inserting metric")
+          Logger.error("Error inserting metric: #{inspect(e)}")
           {:error, e}
       end
 

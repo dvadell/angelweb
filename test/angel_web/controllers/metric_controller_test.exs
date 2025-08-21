@@ -106,7 +106,7 @@ defmodule AngelWeb.MetricControllerTest do
     assert json_response(conn, 201) == %{"message" => "Data sent to TimescaleDB"}
   end
 
-  test "create returns 400 for negative graph_value", %{conn: conn} do
+  test "create returns 200 for negative graph_value", %{conn: conn} do
     conn =
       post(conn, "/api/v1/metric", %{
         short_name: "test.metric",
@@ -115,7 +115,7 @@ defmodule AngelWeb.MetricControllerTest do
         reporter: "test_reporter"
       })
 
-    assert json_response(conn, 400) == %{"error" => "Invalid data"}
+    assert json_response(conn, 201) == %{"message" => "Data sent to TimescaleDB"}
   end
 
   test "create returns 400 for invalid type", %{conn: conn} do

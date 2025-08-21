@@ -5,11 +5,12 @@ defmodule Angel.Graphs do
   """
 
   import Ecto.Query, warn: false
+  alias Angel.Graphs.Index
+  alias Angel.Metrics # Add this alias
   alias Angel.Repo
   alias Decimal
-  alias Angel.Metrics # Add this alias
 
-  alias Angel.Graphs.Index
+  require Logger
 
   @doc """
   Returns the list of graphs with their latest status.
@@ -154,7 +155,7 @@ defmodule Angel.Graphs do
         {:ok, [%{target: graph_name_with_prefix, datapoints: datapoints}]}
 
       {:error, e} ->
-        IO.inspect(e, label: "Error fetching data from TimescaleDB")
+        Logger.error("Error fetching data from TimescaleDB: #{inspect(e)}")
         {:error, e}
     end
   end
