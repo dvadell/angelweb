@@ -1,4 +1,5 @@
 defmodule Angel.Metrics do
+  @moduledoc "Schema for metrics"
   use Ecto.Schema
   import Ecto.Changeset
 
@@ -17,4 +18,3 @@ defmodule Angel.Metrics do
     |> validate_number(:value, greater_than_or_equal_to: 0)
   end
 end
-

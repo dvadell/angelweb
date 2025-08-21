@@ -1,8 +1,8 @@
 defmodule Angel.Graphs do
-  @behaviour Angel.Graphs.Behaviour
   @moduledoc """
   The Graphs context.
   """
+  @behaviour Angel.Graphs.Behaviour
 
   import Ecto.Query, warn: false
   alias Angel.Graphs.Index
@@ -22,7 +22,8 @@ defmodule Angel.Graphs do
 
   """
   def list_graphs do
-    Repo.all(Index)
+    Index
+    |> Repo.all
     |> Enum.map(fn graph ->
       latest_metric = get_latest_metric(graph.short_name)
       status = calculate_status(latest_metric, graph.min_value, graph.max_value)
@@ -38,7 +39,7 @@ defmodule Angel.Graphs do
     |> limit(1)
     |> Repo.one()
     |> case do
-      value when is_number(value) -> value # Change to is_number(value)
+      value when is_number(value) -> value
       _ -> nil # No metric found
     end
   end

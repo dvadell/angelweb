@@ -7,7 +7,7 @@ defmodule AngelWeb.IndexLive.Index do
     {:ok, assign(socket, :graphs, list_graphs())}
   end
 
-  defp list_graphs() do
+  defp list_graphs do
     Graphs.list_graphs()
   end
 end

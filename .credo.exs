@@ -97,7 +97,6 @@
           {Credo.Check.Readability.SeparateAliasRequire, []},
           {Credo.Check.Readability.StrictModuleLayout, []},
           {Credo.Check.Readability.MultiAlias, []},
-          {Credo.Check.Readability.BlockPipe, []},
 
           #
           ## Refactoring Opportunities

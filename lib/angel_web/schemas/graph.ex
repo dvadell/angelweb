@@ -1,4 +1,7 @@
 defmodule AngelWeb.Schemas.Graph do
+  @moduledoc """
+  Schema for the `graphs` table (graphs)
+  """
   use Ecto.Schema
   import Ecto.Changeset
 

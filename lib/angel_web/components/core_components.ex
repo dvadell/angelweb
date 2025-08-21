@@ -14,12 +14,12 @@ defmodule AngelWeb.CoreComponents do
 
   Icons are provided by [heroicons](https://heroicons.com). See `icon/1` for usage.
   """
+  use Gettext, backend: AngelWeb.Gettext
   use Phoenix.Component
 
+  import Phoenix.HTML
   alias Phoenix.HTML.Form
   alias Phoenix.LiveView.JS
-  use Gettext, backend: AngelWeb.Gettext
-  import Phoenix.HTML
 
   @doc """
   Renders a modal.

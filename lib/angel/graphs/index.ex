@@ -1,4 +1,5 @@
 defmodule Angel.Graphs.Index do
+  @moduledoc "Schema for graphs"
   use Ecto.Schema
   import Ecto.Changeset
 

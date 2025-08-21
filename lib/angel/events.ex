@@ -1,8 +1,8 @@
 defmodule Angel.Events do
-  @behaviour Angel.Events.Behaviour
   @moduledoc """
   The Events context.
   """
+  @behaviour Angel.Events.Behaviour
 
   import Ecto.Query, warn: false
   alias Angel.Repo
