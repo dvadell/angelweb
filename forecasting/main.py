@@ -5,6 +5,9 @@ from pydantic import BaseModel
 from datetime import datetime, timedelta
 from typing import List, Dict, Any
 import uvicorn
+import pandas as pd
+from prophet import Prophet
+import asyncio
 
 app = FastAPI(
     title="Forecasting Service",
@@ -95,90 +98,161 @@ async def forecast_metric(metric_name: str, request: ForecastRequest = ForecastR
     7. Return structured forecast data
     """
     try:
-        # TODO: Validate metric exists
-        # if not metric_exists(metric_name):
-        #     raise HTTPException(status_code=404, detail=f"Metric {metric_name} not found")
+        # Step 1: Validate metric_name exists in database
+        # Query the database for the list of all available metric names.
+        available_metrics = await _get_available_metrics_from_db()
+        if metric_name not in available_metrics:
+            # If the requested metric is not in the list, return a 404 error.
+            raise HTTPException(status_code=404, detail=f"Metric '{metric_name}' not found. Available metrics: {available_metrics}")
         
-        # TODO: Fetch historical data from TimescaleDB
-        # historical_data = fetch_metric_data(metric_name)
+        # Step 2: Fetch historical data from TimescaleDB
+        # Retrieve the time series data for the specified metric.
+        historical_data = await fetch_metric_data(metric_name)
+
+        # A forecast cannot be generated without historical data.
+        if not historical_data:
+            raise HTTPException(status_code=404, detail=f"No historical data found for metric '{metric_name}' to generate a forecast.")
+
+        # Steps 3, 4, and 5: Prepare data, fit model, and generate forecast.
+        # These steps are computationally intensive and are handled within the `run_prophet_forecast` function.
+        # To prevent blocking the main asynchronous event loop, this synchronous, CPU-bound function
+        # is run in a separate thread pool managed by FastAPI.
+        df, forecast = await asyncio.to_thread(
+            run_prophet_forecast, 
+            historical_data, 
+            request.hours_ahead, 
+            request.confidence_interval
+        )
         
-        # TODO: Run Prophet forecasting
-        # forecast_data = run_prophet_forecast(historical_data, request.hours_ahead, request.confidence_interval)
-        
-        # DUMMY DATA - replace with actual Prophet implementation
-        current_time = datetime.now()
-        dummy_forecast_points = []
-        
-        # Generate dummy forecast points
-        for i in range(request.hours_ahead):
-            timestamp = current_time + timedelta(hours=i+1)
-            # Simulate server response time with some seasonality pattern
-            base_value = 150 + (50 * (i % 24) / 24)  # Daily pattern
-            predicted_value = base_value + (10 * (i % 7) / 7)  # Weekly pattern
-            
-            dummy_forecast_points.append(ForecastPoint(
-                timestamp=timestamp,
-                predicted_value=predicted_value,
-                lower_bound=predicted_value * 0.8,  # 20% lower bound
-                upper_bound=predicted_value * 1.2   # 20% upper bound
-            ))
-        
+        # The forecast dataframe contains both historical predictions and future values.
+        # We extract only the future points for the final response.
+        future_forecast = forecast.tail(request.hours_ahead)
+        forecast_points = [
+            ForecastPoint(
+                timestamp=row['ds'],
+                predicted_value=row['yhat'],
+                lower_bound=row['yhat_lower'],
+                upper_bound=row['yhat_upper']
+            ) for _, row in future_forecast.iterrows()
+        ]
+
+        # Step 6: Calculate anomaly detection bounds.
+        # These bounds are calculated using the residuals (the difference between actual and predicted values)
+        # from the historical portion of the data. A common approach is to set the threshold at a certain
+        # number of standard deviations (e.g., 3) away from the mean of the predictions.
+        residuals = (df['y'] - forecast.head(len(df))['yhat']).abs()
+        anomaly_threshold_upper = forecast['yhat'].mean() + (3 * residuals.std())
+        anomaly_threshold_lower = forecast['yhat'].mean() - (3 * residuals.std())
+
+        # As a bonus, calculate the model's accuracy using Mean Absolute Percentage Error (MAPE)
+        # on the historical data. This gives an indication of the forecast's reliability.
+        # We add a small epsilon (1e-9) to the denominator to avoid division-by-zero errors.
+        mape = (((df['y'] - forecast.head(len(df))['yhat']).abs()) / (df['y'] + 1e-9)).mean()
+        model_accuracy = max(0, 1 - mape) # Accuracy is represented as 1 - MAPE, clamped at 0.
+
+        # Step 7: Return structured forecast data.
+        # The final data is packaged into the ForecastResponse Pydantic model, which handles
+        # data validation and JSON serialization.
         return ForecastResponse(
             metric=metric_name,
-            forecast_points=dummy_forecast_points,
-            anomaly_threshold_upper=200.0,  # TODO: Calculate from historical data
-            anomaly_threshold_lower=50.0,   # TODO: Calculate from historical data
-            model_accuracy=0.85,            # TODO: Calculate actual model performance metrics
-            last_updated=current_time
+            forecast_points=forecast_points,
+            anomaly_threshold_upper=anomaly_threshold_upper,
+            anomaly_threshold_lower=anomaly_threshold_lower,
+            model_accuracy=model_accuracy,
+            last_updated=datetime.now()
         )
         
     except Exception as e:
+        # If the exception is an HTTPException, re-raise it to let FastAPI handle it.
+        if isinstance(e, HTTPException):
+            raise
+        # If any other exception occurs, catch it and return a generic 500 error
+        # to prevent leaking internal implementation details.
         raise HTTPException(status_code=500, detail=f"Forecasting failed: {str(e)}")
 
 @app.post("/detect_anomalies/{metric_name}")
 async def detect_anomalies(metric_name: str, hours_back: int = 24):
     """
-    Anomaly detection endpoint - compares recent actual values against forecast
-    
-    Steps to implement:
-    1. Get recent actual values from TimescaleDB
-    2. Get corresponding forecast values (from cache or regenerate)
-    3. Compare actual vs predicted with confidence bounds
-    4. Flag values outside bounds as anomalies
-    5. Return anomaly periods with severity scores
+    Anomaly detection endpoint - compares recent actual values against forecast.
     """
-    
-    # TODO: Implement actual anomaly detection logic
-    # actual_data = fetch_recent_data(metric_name, hours_back)
-    # forecast_data = get_forecast_for_period(metric_name, hours_back_start, hours_back_end)
-    # anomalies = detect_anomalies_logic(actual_data, forecast_data)
-    
-    # DUMMY DATA
-    current_time = datetime.now()
-    dummy_anomalies = [
-        {
-            "timestamp": current_time - timedelta(hours=5),
-            "actual_value": 500.0,
-            "predicted_value": 150.0,
-            "severity": "high",
-            "deviation_score": 2.5
-        },
-        {
-            "timestamp": current_time - timedelta(hours=2),
-            "actual_value": 250.0,
-            "predicted_value": 180.0,
-            "severity": "medium", 
-            "deviation_score": 1.8
+    try:
+        # To detect anomalies in the last `hours_back` period, we need to train a model
+        # on data from *before* that period. We'll use 7 days of prior data for training.
+        training_plus_detection_hours = hours_back + (24 * 7)
+        all_data = await fetch_metric_data(metric_name, training_plus_detection_hours)
+
+        if not all_data:
+            raise HTTPException(status_code=404, detail=f"Not enough data for metric '{metric_name}' to detect anomalies.")
+
+        all_df = pd.DataFrame(all_data)
+        all_df['timestamp'] = pd.to_datetime(all_df['timestamp'])
+        
+        # Split data into a training set (historical) and a detection set (recent)
+        detection_start_time = all_df['timestamp'].max() - timedelta(hours=hours_back)
+        
+        training_data = [row.to_dict() for _, row in all_df[all_df['timestamp'] < detection_start_time].iterrows()]
+        detection_df = all_df[all_df['timestamp'] >= detection_start_time].copy()
+
+        if not training_data:
+            raise HTTPException(status_code=404, detail=f"Not enough historical data for metric '{metric_name}' to build a model for anomaly detection.")
+
+        # Generate a forecast for the detection period using the training data.
+        # We use a wider confidence interval (99%) for anomaly detection to reduce false positives.
+        _, forecast = await asyncio.to_thread(
+            run_prophet_forecast,
+            training_data,
+            hours_back,
+            0.99  # 99% confidence interval
+        )
+
+        # Get the forecasted values for the detection period
+        recent_forecast = forecast.tail(hours_back)
+
+        # Merge actual recent values with the forecasted values
+        detection_df.rename(columns={'timestamp': 'ds', 'value': 'y'}, inplace=True)
+        merged_df = pd.merge(
+            detection_df, 
+            recent_forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']], 
+            on='ds',
+            how='inner'
+        )
+
+        # Identify points where the actual value is outside the confidence bands
+        merged_df['is_anomaly'] = (merged_df['y'] < merged_df['yhat_lower']) | (merged_df['y'] > merged_df['yhat_upper'])
+        
+        anomalies_df = merged_df[merged_df['is_anomaly']]
+
+        # Prepare the response
+        anomalies_list = []
+        for _, row in anomalies_df.iterrows():
+            if row['y'] > row['yhat_upper']:
+                deviation = row['y'] - row['yhat_upper']
+                severity_range = (row['yhat_upper'] - row['yhat_lower'])
+            else: # row['y'] < row['yhat_lower']
+                deviation = row['yhat_lower'] - row['y']
+                severity_range = (row['yhat_upper'] - row['yhat_lower'])
+
+            severity = "high" if severity_range > 0 and deviation / severity_range > 0.5 else "medium"
+
+            anomalies_list.append({
+                "timestamp": row['ds'],
+                "actual_value": row['y'],
+                "predicted_value": row['yhat'],
+                "severity": severity,
+                "deviation_score": deviation
+            })
+
+        return {
+            "metric": metric_name,
+            "period_analyzed_hours": hours_back,
+            "anomalies_detected": len(anomalies_list),
+            "anomalies": anomalies_list,
+            "analysis_timestamp": datetime.now()
         }
-    ]
-    
-    return {
-        "metric": metric_name,
-        "period_analyzed_hours": hours_back,
-        "anomalies_detected": len(dummy_anomalies),
-        "anomalies": dummy_anomalies,
-        "analysis_timestamp": current_time
-    }
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise
+        raise HTTPException(status_code=500, detail=f"Anomaly detection failed: {str(e)}")
 
 async def connect_to_timescaledb():
     """
@@ -205,7 +279,7 @@ async def close_timescaledb_connection():
         await db_pool.close()
         print("TimescaleDB connection pool closed.")
 
-async def fetch_metric_data(metric_name: str, hours_back: int = 24 * 7) -> List[Dict]:
+async def fetch_metric_data(metric_name: str, hours_back: int = 24 * 7) -> List[Dict[str, Any]]:
     """
     Fetch historical metric data from TimescaleDB
     
@@ -216,14 +290,34 @@ async def fetch_metric_data(metric_name: str, hours_back: int = 24 * 7) -> List[
     Returns:
         List of dictionaries with 'timestamp' and 'value' keys
     """
-    # TODO: Implement TimescaleDB query
-    # SELECT time, value FROM metrics 
-    # WHERE metric_name = %s 
-    # AND time >= NOW() - INTERVAL '%s hours'
-    # ORDER BY time ASC
-    pass
+    global db_pool
+    if db_pool is None:
+        raise HTTPException(status_code=500, detail="Database connection not established.")
 
-async def run_prophet_forecast(historical_data: List[Dict], hours_ahead: int, confidence_interval: float):
+    # This query joins the 'events' table (which stores time-series data)
+    # with the 'graphs' table (which defines the metrics) to fetch historical
+    # data for a given metric's short_name.
+    query = """
+        SELECT
+            e.inserted_at AS timestamp,
+            e.value
+        FROM events AS e
+        JOIN graphs AS g ON e.graph_id = g.id
+        WHERE g.short_name = $1
+        AND e.inserted_at >= NOW() - make_interval(hours => $2)
+        ORDER BY e.inserted_at ASC
+    """
+    
+    try:
+        async with db_pool.acquire() as connection:
+            records = await connection.fetch(query, metric_name, hours_back)
+            # The Prophet library expects float values, so we cast here
+            return [{"timestamp": r['timestamp'], "value": float(r['value'])} for r in records]
+    except Exception as e:
+        # Re-raise as HTTPException to be caught by FastAPI's error handling
+        raise HTTPException(status_code=500, detail=f"Failed to fetch historical data for metric '{metric_name}': {str(e)}")
+
+def run_prophet_forecast(historical_data: List[Dict[str, Any]], hours_ahead: int, confidence_interval: float):
     """
     Run Prophet forecasting model
     
@@ -233,10 +327,30 @@ async def run_prophet_forecast(historical_data: List[Dict], hours_ahead: int, co
     3. Fit model on historical data
     4. Create future dataframe
     5. Generate predictions
-    6. Extract confidence intervals
+    6. Return original dataframe and forecast dataframe
     """
-    # TODO: Implement Prophet forecasting logic
-    pass
+    # 1. Convert data to pandas DataFrame
+    df = pd.DataFrame(historical_data)
+    df.rename(columns={'timestamp': 'ds', 'value': 'y'}, inplace=True)
+
+    # Ensure 'ds' is datetime and 'y' is numeric
+    df['ds'] = pd.to_datetime(df['ds'])
+    df['y'] = pd.to_numeric(df['y'])
+
+    # 2. Initialize Prophet
+    m = Prophet(interval_width=confidence_interval)
+
+    # 3. Fit model
+    m.fit(df)
+
+    # 4. Create future dataframe
+    future = m.make_future_dataframe(periods=hours_ahead, freq='H')
+
+    # 5. Generate predictions
+    forecast = m.predict(future)
+
+    # 6. Return both dataframes
+    return df, forecast
 
 # Development server startup
 if __name__ == "__main__":
