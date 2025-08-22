@@ -193,8 +193,10 @@ async def detect_anomalies(metric_name: str, hours_back: int = 24):
         training_data = [row.to_dict() for _, row in all_df[all_df['timestamp'] < detection_start_time].iterrows()]
         detection_df = all_df[all_df['timestamp'] >= detection_start_time].copy()
 
-        if not training_data:
-            raise HTTPException(status_code=404, detail=f"Not enough historical data for metric '{metric_name}' to build a model for anomaly detection.")
+        # We need a minimum amount of data to train a meaningful model.
+        MIN_TRAINING_POINTS = 72  # 3 days of hourly data
+        if len(training_data) < MIN_TRAINING_POINTS:
+            raise HTTPException(status_code=404, detail=f"Not enough historical data for metric '{metric_name}' to build a model for anomaly detection. Need at least {MIN_TRAINING_POINTS} data points for training.")
 
         # Generate a forecast for the detection period using the training data.
         # We use a wider confidence interval (99%) for anomaly detection to reduce false positives.

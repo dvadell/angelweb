@@ -37,3 +37,5 @@ npm-debug.log
 .bash_history_local
 .env
 .aider*
+forecasting/__pycache__/
+forecasting/tests/__pycache__/*

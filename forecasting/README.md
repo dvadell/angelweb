@@ -9,15 +9,20 @@ forecasting/
 ├── Dockerfile
 ├── main.py
 ├── requirements.txt
-└── test_main.py
+└── tests/
+    ├── conftest.py
+    ├── test_anomalies.py
+    ├── test_forecast.py
+    ├── test_health.py
+    └── test_metrics.py
 ```
 
 ## Features
 
 - **Health Check**: `/health` endpoint to verify service status.
 - **List Available Metrics**: `/metrics` endpoint to retrieve a list of metrics available for forecasting from TimescaleDB.
-- **Forecasting**: `/forecast/{metric_name}` endpoint (TODO: implementation details).
-- **Anomaly Detection**: `/detect_anomalies/{metric_name}` endpoint (TODO: implementation details).
+- **Forecasting**: `/forecast/{metric_name}` endpoint to generate a forecast for a given metric.
+- **Anomaly Detection**: `/detect_anomalies/{metric_name}` endpoint to detect anomalies in recent data.
 
 ## Setup and Running
 
@@ -30,7 +35,7 @@ This service is designed to run as part of a larger `docker-compose` setup, alon
     The service requires a `DATABASE_URL` environment variable to connect to TimescaleDB. This is typically provided via a `.env` file or directly in `docker-compose.yml`.
 
     Example `DATABASE_URL` (as seen in `docker-compose.yml`):
-    `postgresql://postgres:postgres@timescaledb:5432/angel`
+    `postgresql://postgres:postgres@db:5432/angel`
 
 3.  **Building and Running with Docker Compose**:
     Navigate to the root directory of the project (where `docker-compose.yml` is located) and run:
@@ -48,7 +53,7 @@ This service is designed to run as part of a larger `docker-compose` setup, alon
 
 ## Testing
 
-Tests for the forecasting microservice are written using `pytest` and can be run within the Docker environment.
+Tests for the forecasting microservice are written using `pytest` and are located in the `tests/` directory.
 
 1.  **Ensure the service image is built**:
 
@@ -56,20 +61,24 @@ Tests for the forecasting microservice are written using `pytest` and can be run
     docker compose build forecasting
     ```
 
-2.  **Run the tests**:
+2.  **Run all tests**:
 
     ```bash
-    docker compose run forecasting pytest test_main.py
+    docker compose run forecasting pytest
     ```
 
-    This command will:
-    *   Start a new container for the `forecasting` service.
-    *   Execute `pytest` to run all tests defined in `test_main.py`.
+    This command will start a new container and automatically discover and run all tests in the `tests/` directory.
 
-    To run a specific test (e.g., `test_list_available_metrics_unit`):
+    To run a specific test file:
 
     ```bash
-    docker compose run forecasting pytest -v test_main.py::test_list_available_metrics_unit
+    docker compose run forecasting pytest tests/test_forecast.py
+    ```
+
+    To run a specific test function:
+
+    ```bash
+    docker compose run forecasting pytest tests/test_forecast.py::test_forecast_metric_success
     ```
 
 ## API Endpoints
@@ -83,7 +92,11 @@ Tests for the forecasting microservice are written using `pytest` and can be run
     *   **Response**: `{"available_metrics": ["metric_name_1", "metric_name_2", ...]}`
 
 -   **POST /forecast/{metric_name}**
-    *   **Description**: Main forecasting endpoint (TODO: details).
+    *   **Description**: Generates a forecast for the given metric.
+    *   **Request Body** (optional): `{"hours_ahead": 24, "confidence_interval": 0.95}`
+    *   **Response**: A `ForecastResponse` object with predicted points, confidence bounds, and accuracy.
 
 -   **POST /detect_anomalies/{metric_name}**
-    *   **Description**: Anomaly detection endpoint (TODO: details).
+    *   **Description**: Detects anomalies in the recent data for a given metric.
+    *   **Query Parameters** (optional): `hours_back=24`
+    *   **Response**: A list of detected anomalies with their severity.
