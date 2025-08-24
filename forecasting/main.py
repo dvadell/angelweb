@@ -185,7 +185,7 @@ async def detect_anomalies(metric_name: str, hours_back: int = 24):
             raise HTTPException(status_code=404, detail=f"Not enough data for metric '{metric_name}' to detect anomalies.")
 
         all_df = pd.DataFrame(all_data)
-        all_df['timestamp'] = pd.to_datetime(all_df['timestamp'])
+        all_df['timestamp'] = pd.to_datetime(all_df['timestamp']).dt.tz_localize(None)
         
         # Split data into a training set (historical) and a detection set (recent)
         detection_start_time = all_df['timestamp'].max() - timedelta(hours=hours_back)
@@ -300,21 +300,15 @@ async def fetch_metric_data(metric_name: str, hours_back: int = 24 * 7) -> List[
     # with the 'graphs' table (which defines the metrics) to fetch historical
     # data for a given metric's short_name.
     query = """
-        SELECT
-            e.inserted_at AS timestamp,
-            e.value
-        FROM events AS e
-        JOIN graphs AS g ON e.graph_id = g.id
-        WHERE g.short_name = $1
-        AND e.inserted_at >= NOW() - make_interval(hours => $2)
-        ORDER BY e.inserted_at ASC
-    """
+      SELECT metric_timestamp, avg_value FROM get_metrics($1::text, NOW() - INTERVAL '%s hours', NOW())
+    """ 
+    formatted_query = query % hours_back
     
     try:
         async with db_pool.acquire() as connection:
-            records = await connection.fetch(query, metric_name, hours_back)
+            records = await connection.fetch(formatted_query, metric_name)
             # The Prophet library expects float values, so we cast here
-            return [{"timestamp": r['timestamp'], "value": float(r['value'])} for r in records]
+            return [{"timestamp": r['metric_timestamp'], "value": float(r['avg_value'])} for r in records]
     except Exception as e:
         # Re-raise as HTTPException to be caught by FastAPI's error handling
         raise HTTPException(status_code=500, detail=f"Failed to fetch historical data for metric '{metric_name}': {str(e)}")
@@ -335,8 +329,8 @@ def run_prophet_forecast(historical_data: List[Dict[str, Any]], hours_ahead: int
     df = pd.DataFrame(historical_data)
     df.rename(columns={'timestamp': 'ds', 'value': 'y'}, inplace=True)
 
-    # Ensure 'ds' is datetime and 'y' is numeric
-    df['ds'] = pd.to_datetime(df['ds'])
+    # Ensure 'ds' is datetime (and timezone-naive) and 'y' is numeric
+    df['ds'] = pd.to_datetime(df['ds']).dt.tz_localize(None)
     df['y'] = pd.to_numeric(df['y'])
 
     # 2. Initialize Prophet

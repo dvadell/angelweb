@@ -4,6 +4,8 @@ defmodule AngelWeb.IndexLive.Show do
   alias Angel.Graphs.Index
   alias Jason
 
+  require Logger
+
   @impl true
   def mount(%{"id" => graph_name}, _session, socket) do
     graph =
@@ -253,12 +255,46 @@ defmodule AngelWeb.IndexLive.Show do
         max_value = graph.max_value
         graph_type = graph.graph_type
 
-        updated_data =
+        db_data =
           Enum.map(data, fn item ->
             Map.merge(item, %{min_value: min_value, max_value: max_value, graph_type: graph_type})
           end)
 
-        push_event(socket, "chart:data_loaded", %{data: updated_data})
+        Logger.info("Fetching forecast...")
+        all_data =
+          case fetch_forecast_data(graph_name) do
+            {:ok, forecast_points} ->
+              forecast_datapoints =
+                Enum.map(forecast_points, fn point ->
+                  # The timestamp is in iso8601 format without Z. Assuming UTC.
+                  {:ok, dt, 0} = DateTime.from_iso8601(point["timestamp"] <> "Z")
+
+                  %{
+                    "timestamp" => DateTime.to_unix(dt, :millisecond),
+                    "value" => point["predicted_value"],
+                    "lower_bound" => point["lower_bound"],
+                    "upper_bound" => point["upper_bound"]
+                  }
+                  |> IO.inspect
+                end)
+
+              forecast_series = %{
+                target: "forecast",
+                datapoints: forecast_datapoints,
+                min_value: graph.min_value,
+                max_value: graph.max_value,
+                graph_type: "line"
+              }
+
+              db_data ++ [forecast_series]
+              |> IO.inspect
+
+            error ->
+              Logger.error("fetch_forecast_data for #{graph_name} returned: #{inspect(error)}")
+              db_data
+          end
+
+        push_event(socket, "chart:data_loaded", %{data: all_data})
 
       {:error, _e} ->
         # Send empty data structure on error
@@ -278,6 +314,29 @@ defmodule AngelWeb.IndexLive.Show do
         ]
 
         push_event(socket, "chart:data_loaded", %{data: empty_data})
+    end
+  end
+
+  defp fetch_forecast_data(graph_name) do
+    url = "http://forecasting:8000/forecast/#{graph_name}"
+    body = Jason.encode!(%{"hours_ahead" => 24, "confidence_interval" => 0.95})
+    headers = [{"Content-Type", "application/json"}]
+
+    case HTTPoison.post(url, body, headers) do
+      {:ok, %HTTPoison.Response{status_code: 200, body: response_body}} ->
+        case Jason.decode(response_body) do
+          {:ok, %{"forecast_points" => points}} ->
+            {:ok, points}
+
+          _ ->
+            {:error, :json_parsing}
+        end
+
+      {:ok, %HTTPoison.Response{status_code: status_code}} ->
+        {:error, {:http_error, status_code}}
+
+      {:error, %HTTPoison.Error{reason: reason}} ->
+        {:error, reason}
     end
   end
 end
