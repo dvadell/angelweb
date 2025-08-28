@@ -139,6 +139,31 @@ defmodule Angel.Graphs do
     Index.changeset(index, attrs)
   end
 
+  def count_metrics(graph_name) do
+    Angel.Metrics
+    |> where([m], m.name == ^graph_name)
+    |> select(count())
+    |> Repo.one()
+  end
+
+  def first_metric_timestamp(graph_name) do
+    Angel.Metrics
+    |> where([m], m.name == ^graph_name)
+    |> order_by([m], asc: m.timestamp)
+    |> limit(1)
+    |> select([m], m.timestamp)
+    |> Repo.one()
+  end
+
+  def last_metric_timestamp(graph_name) do
+    Angel.Metrics
+    |> where([m], m.name == ^graph_name)
+    |> order_by([m], desc: m.timestamp)
+    |> limit(1)
+    |> select([m], m.timestamp)
+    |> Repo.one()
+  end
+
   def fetch_timescaledb_data(graph_name_with_prefix, start_time, end_time) do
     query = "SELECT * FROM get_metrics($1, $2, $3);"
 

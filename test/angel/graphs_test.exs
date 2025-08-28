@@ -66,11 +66,12 @@ defmodule Angel.GraphsTest do
 
     test "returns data points for a given graph and time range" do
       graph = index_fixture(%{short_name: "my_graph"})
-      metric_fixture(%{name: "my_graph", value: 10.0, timestamp: ~U[2025-08-21 12:00:00Z]})
-      metric_fixture(%{name: "my_graph", value: 20.0, timestamp: ~U[2025-08-21 12:01:00Z]})
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      metric_fixture(%{name: "my_graph", value: 10.0, timestamp: DateTime.add(now, -1, :minute)})
+      metric_fixture(%{name: "my_graph", value: 20.0, timestamp: now})
 
-      start_time = ~U[2025-08-21 11:59:00Z]
-      end_time = ~U[2025-08-21 12:02:00Z]
+      start_time = DateTime.add(now, -2, :minute)
+      end_time = DateTime.add(now, 1, :minute)
 
       {:ok, result} = Graphs.fetch_timescaledb_data(graph.short_name, start_time, end_time)
 

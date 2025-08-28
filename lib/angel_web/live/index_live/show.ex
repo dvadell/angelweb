@@ -15,6 +15,10 @@ defmodule AngelWeb.IndexLive.Show do
 
     if connected?(socket), do: Phoenix.PubSub.subscribe(Angel.PubSub, "new_metric:#{graph_name}")
 
+    metrics_count = Graphs.count_metrics(graph_name)
+    first_metric_at = Graphs.first_metric_timestamp(graph_name)
+    last_metric_at = Graphs.last_metric_timestamp(graph_name)
+
     {:ok,
      socket
      |> assign(:events, Angel.Events.for_graph(graph_name))
@@ -24,6 +28,10 @@ defmodule AngelWeb.IndexLive.Show do
      |> assign(:show_form, false)
      |> assign(:show_events, false)
      |> assign(:show_notes, false)
+     |> assign(:show_debug, false)
+     |> assign(:metrics_count, metrics_count)
+     |> assign(:first_metric_at, first_metric_at)
+     |> assign(:last_metric_at, last_metric_at)
      |> assign(:chart_is_playing, true)}
   end
 
@@ -58,6 +66,11 @@ defmodule AngelWeb.IndexLive.Show do
   @impl true
   def handle_event("toggle_notes", _params, socket) do
     {:noreply, assign(socket, :show_notes, not socket.assigns.show_notes)}
+  end
+
+  @impl true
+  def handle_event("toggle_debug", _params, socket) do
+    {:noreply, assign(socket, :show_debug, not socket.assigns.show_debug)}
   end
 
   @impl true
