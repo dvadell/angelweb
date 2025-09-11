@@ -596,6 +596,44 @@ defmodule AngelWeb.CoreComponents do
     """
   end
 
+  attr :values, :list, required: true
+  attr :width, :string, default: "100"
+  attr :height, :string, default: "30"
+  attr :class, :string, default: nil
+
+  def sparkline(assigns) do
+    ~H"""
+    <svg width={@width} height={@height} stroke="currentColor" stroke-width="2" fill="none" class={@class}>
+      <polyline points={points(@values, @width, @height)} />
+    </svg>
+    """
+  end
+
+  defp points(values, width_str, height_str) do
+    # It's possible that there are no values, so we can't create a sparkline
+    if values == [] do
+      ""
+    else
+      width = String.to_integer(width_str)
+      height = String.to_integer(height_str)
+      max_value = Enum.max(values)
+      min_value = Enum.min(values)
+      value_range = max_value - min_value
+      # If there is no range, we can't create a sparkline
+      value_range = if value_range == 0, do: 1, else: value_range
+      # If there is only one value, we can't create a sparkline
+      x_step = if length(values) > 1, do: width / (length(values) - 1), else: 0
+
+      values
+      |> Enum.with_index()
+      |> Enum.map_join(" ", fn {value, i} ->
+        x = i * x_step
+        y = height - (value - min_value) / value_range * height
+        "#{x},#{y}"
+      end)
+    end
+  end
+
   ## JS Commands
 
   def show(js \\ %JS{}, selector) do

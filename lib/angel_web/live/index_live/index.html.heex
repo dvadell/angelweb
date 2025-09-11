@@ -3,17 +3,42 @@
   <%= Enum.map(@graphs, fn g -> %>
     <li>
       <a href={"/graphs/#{g.short_name}"}>
-        <%= if g.status == :ok do %>
-          ✅
-        <% end %>
-        <%= if g.status == :not_ok do %>
-          ❌
-        <% end %>
-        <%= if g.status == :no_data do %>
-          ❓
-        <% end %>
-        {g.short_name}
+        <span>
+          <%= if g.status == :ok do %>
+            ✅
+          <% end %>
+          <%= if g.status == :not_ok do %>
+            ❌
+          <% end %>
+          <%= if g.status == :no_data do %>
+            ❓
+          <% end %>
+          {g.short_name}
+        </span>
+        <.sparkline values={g.sparkline} class="sparkline" />
       </a>
     </li>
   <% end) %>
 </ul>
+
+<style>
+  ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  li {
+    border-bottom: 1px solid #ccc;
+    padding: 1rem 0;
+  }
+
+  li a {
+    text-decoration: none;
+    color: #333;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+</style>

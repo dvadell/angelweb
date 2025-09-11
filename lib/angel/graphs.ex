@@ -26,8 +26,28 @@ defmodule Angel.Graphs do
     |> Enum.map(fn graph ->
       latest_metric = get_latest_metric(graph.short_name)
       status = calculate_status(latest_metric, graph.min_value, graph.max_value)
-      Map.put(graph, :status, status)
+      sparkline_data = get_sparkline_data(graph.short_name)
+
+      graph
+      |> Map.put(:status, status)
+      |> Map.put(:sparkline, sparkline_data)
     end)
+  end
+
+  defp get_sparkline_data(graph_name) do
+    end_time = DateTime.utc_now() |> DateTime.truncate(:second)
+    start_time = DateTime.add(end_time, -1, :day)
+
+    case fetch_timescaledb_data(graph_name, start_time, end_time) do
+      {:ok, [%{datapoints: datapoints}]} ->
+        datapoints
+        |> Enum.map(fn [value, _timestamp] -> value end)
+        |> Enum.reject(&is_nil(&1))
+        |> Enum.take(-6)
+
+      _other ->
+        []
+    end
   end
 
   defp get_latest_metric(graph_name) do

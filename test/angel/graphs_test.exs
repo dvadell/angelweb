@@ -7,6 +7,7 @@ defmodule Angel.GraphsTest do
     alias Angel.Graphs.Index
 
     import Angel.GraphsFixtures
+    import Angel.MetricsFixtures
 
     @invalid_attrs %{short_name: nil}
 
@@ -57,6 +58,18 @@ defmodule Angel.GraphsTest do
     test "change_index/1 returns a index changeset" do
       index = index_fixture()
       assert %Ecto.Changeset{} = Graphs.change_index(index)
+    end
+
+    test "list_graphs/0 returns sparkline data" do
+      index_fixture(%{short_name: "my_graph"})
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      for i <- 1..10 do
+        metric_fixture(%{name: "my_graph", value: i, timestamp: DateTime.add(now, -i, :minute)})
+      end
+
+      [returned_graph] = Graphs.list_graphs()
+      assert length(returned_graph.sparkline) <= 6
     end
   end
 
