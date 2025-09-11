@@ -2,6 +2,7 @@ defmodule AngelWeb.IndexLive.Show do
   use AngelWeb, :live_view
   alias Angel.Graphs
   alias Angel.Graphs.Index
+  alias Angel.Junior
   alias Jason
 
   @impl true
@@ -140,7 +141,9 @@ defmodule AngelWeb.IndexLive.Show do
          {:ok, end_time, _utc_offset} <- DateTime.from_iso8601(end_time_str) do
       graph_name = socket.assigns.graph_name
 
-      case Angel.Graphs.fetch_timescaledb_data(graph_name, start_time, end_time) do
+      case Junior.trace("angel_graphs_fetch_timescaledb_data", fn ->
+             Angel.Graphs.fetch_timescaledb_data(graph_name, start_time, end_time)
+           end) do
         {:ok, new_data} ->
           graph = socket.assigns.graph
           min_value = graph.min_value
@@ -186,7 +189,9 @@ defmodule AngelWeb.IndexLive.Show do
 
     graph_name = socket.assigns.graph_name
 
-    case Angel.Graphs.fetch_timescaledb_data(graph_name, expanded_min, expanded_max) do
+    case Junior.trace("angel_graphs_fetch_timescaledb_data", fn ->
+           Angel.Graphs.fetch_timescaledb_data(graph_name, expanded_min, expanded_max)
+         end) do
       {:ok, new_data} ->
         graph = socket.assigns.graph
         min_value = graph.min_value
@@ -223,7 +228,9 @@ defmodule AngelWeb.IndexLive.Show do
 
     graph_name = socket.assigns.graph_name
 
-    case Angel.Graphs.fetch_timescaledb_data(graph_name, expanded_min, expanded_max) do
+    case Junior.trace("angel_graphs_fetch_timescaledb_data", fn ->
+           Angel.Graphs.fetch_timescaledb_data(graph_name, expanded_min, expanded_max)
+         end) do
       {:ok, new_data} ->
         graph = socket.assigns.graph
         min_value = graph.min_value
@@ -259,7 +266,9 @@ defmodule AngelWeb.IndexLive.Show do
   defp fetch_and_push_data(socket, start_time, end_time) do
     graph_name = socket.assigns.graph_name
 
-    case Angel.Graphs.fetch_timescaledb_data(graph_name, start_time, end_time) do
+    case Junior.trace("angel_graphs_fetch_timescaledb_data", fn ->
+           Angel.Graphs.fetch_timescaledb_data(graph_name, start_time, end_time)
+         end) do
       {:ok, data} ->
         graph = socket.assigns.graph
         min_value = graph.min_value
