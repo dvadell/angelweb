@@ -7,6 +7,8 @@ defmodule Angel.Application do
 
   @impl true
   def start(_type, _args) do
+    Angel.Telemetry.setup()
+
     children = [
       AngelWeb.Telemetry,
       Angel.Repo,
