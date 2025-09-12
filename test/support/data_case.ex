@@ -20,6 +20,7 @@ defmodule Angel.DataCase do
 
   using do
     quote do
+      import Mox
       alias Angel.Repo
 
       import Ecto

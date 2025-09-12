@@ -1,5 +1,6 @@
 defmodule Angel.Metrics do
   @moduledoc "The Metrics context."
+  @behaviour Angel.Metrics.Behaviour
   use Ecto.Schema
   import Ecto.Changeset
 

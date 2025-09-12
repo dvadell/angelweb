@@ -3,6 +3,9 @@ defmodule Angel.GraphsTest do
 
   alias Angel.Graphs
 
+  Mox.defmock(GraphsMock, for: Angel.Graphs.Behaviour)
+  Mox.defmock(MetricsMock, for: Angel.Metrics.Behaviour)
+
   describe "graphs" do
     alias Angel.Graphs.Index
 
@@ -12,6 +15,25 @@ defmodule Angel.GraphsTest do
     @invalid_attrs %{short_name: nil}
 
     test "list_graphs/0 returns all graphs" do
+      stub_with(GraphsMock, Angel.Graphs)
+      stub_with(MetricsMock, Angel.Metrics)
+
+      expect(GraphsMock, :create_or_update_graph, fn %{
+                                                       "short_name" => "angel_graphs_fetch_timescaledb_data",
+                                                       "units" => "ms",
+                                                       "graph_type" => "time"
+                                                     } ->
+        {:ok, %{}}
+      end)
+
+      expect(MetricsMock, :add_metric, fn %{
+                                            name: "angel_graphs_fetch_timescaledb_data",
+                                            value: _value,
+                                            timestamp: _timestamp
+                                          } ->
+        {:ok, %{}}
+      end)
+
       index = index_fixture()
       [returned_graph] = Graphs.list_graphs()
       assert returned_graph.id == index.id
@@ -61,6 +83,21 @@ defmodule Angel.GraphsTest do
     end
 
     test "list_graphs/0 returns sparkline data" do
+      stub_with(GraphsMock, Angel.Graphs)
+      stub_with(MetricsMock, Angel.Metrics)
+
+      expect(GraphsMock, :create_or_update_graph, fn %{
+                                                       "short_name" => "angel_graphs_fetch_timescaledb_data",
+                                                       "units" => "ms",
+                                                       "graph_type" => "time"
+                                                     } ->
+        {:ok, %{}}
+      end)
+
+      expect(MetricsMock, :add_metric, fn %{name: "my_graph", value: _value, timestamp: _timestamp} ->
+        {:ok, %{}}
+      end)
+
       index_fixture(%{short_name: "my_graph"})
       now = DateTime.utc_now() |> DateTime.truncate(:second)
 

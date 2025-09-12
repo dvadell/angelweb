@@ -39,7 +39,9 @@ defmodule Angel.Graphs do
     end_time = DateTime.utc_now() |> DateTime.truncate(:second)
     start_time = DateTime.add(end_time, -1, :day)
 
-    case Junior.trace("angel_graphs_fetch_timescaledb_data", fn -> fetch_timescaledb_data(graph_name, start_time, end_time) end) do
+    case Junior.trace("angel_graphs_fetch_timescaledb_data", fn ->
+           fetch_timescaledb_data(graph_name, start_time, end_time)
+         end) do
       {:ok, [%{datapoints: datapoints}]} ->
         datapoints
         |> Enum.map(fn [value, _timestamp] -> value end)

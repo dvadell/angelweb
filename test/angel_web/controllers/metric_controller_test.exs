@@ -38,7 +38,7 @@ defmodule AngelWeb.MetricControllerTest do
     |> expect(:create_or_update_graph, fn %{
                                             "short_name" => "test.metric",
                                             "units" => "gauge",
-                                            "min_value" => 0.0,
+                                            "min_value" => +0.0,
                                             "max_value" => 100.0
                                           } ->
       {:ok, %{short_name: "test.metric", units: "gauge"}}

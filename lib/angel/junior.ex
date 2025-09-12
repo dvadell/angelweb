@@ -20,40 +20,36 @@ defmodule Angel.Junior do
     {time_in_microseconds, result} = :timer.tc(fun)
     time_in_milliseconds = time_in_microseconds / 1000
 
-    if Mix.env() != :test do
-      graph_params = %{
-        "short_name" => name,
-        "units" => "ms",
-        "graph_type" => "time"
-      }
+    graph_params = %{
+      "short_name" => name,
+      "units" => "ms",
+      "graph_type" => "time"
+    }
 
-      Graphs.create_or_update_graph(graph_params)
+    Graphs.create_or_update_graph(graph_params)
 
-      Metrics.add_metric(%{
-        timestamp: DateTime.utc_now(),
-        name: name,
-        value: time_in_milliseconds
-      })
-    end
+    Metrics.add_metric(%{
+      timestamp: DateTime.utc_now(),
+      name: name,
+      value: time_in_milliseconds
+    })
 
     result
   end
 
   def trace(name, number) when is_number(number) do
-    if Mix.env() != :test do
-      graph_params = %{
-        "short_name" => name,
-        "units" => "ms",
-        "graph_type" => "time"
-      }
+    graph_params = %{
+      "short_name" => name,
+      "units" => "ms",
+      "graph_type" => "time"
+    }
 
-      Graphs.create_or_update_graph(graph_params)
+    Graphs.create_or_update_graph(graph_params)
 
-      Metrics.add_metric(%{
-        timestamp: DateTime.utc_now(),
-        name: name,
-        value: number
-      })
-    end
+    Metrics.add_metric(%{
+      timestamp: DateTime.utc_now(),
+      name: name,
+      value: number
+    })
   end
 end
