@@ -33,6 +33,23 @@ defmodule AngelWeb.IndexLiveTest do
       assert html =~ "<svg"
       assert html =~ "<polyline"
     end
+
+    test "filters graphs", %{conn: conn} do
+      GraphsFixtures.index_fixture(%{short_name: "graph_one"})
+      GraphsFixtures.index_fixture(%{short_name: "graph_two"})
+
+      {:ok, view, _html} = live(conn, ~p"/graphs")
+
+      assert view |> element("li a[href*='graph_one']") |> has_element?()
+      assert view |> element("li a[href*='graph_two']") |> has_element?()
+
+      view
+      |> form("form[phx-change='filter']", %{"q" => "one"})
+      |> render_change()
+
+      assert view |> element("li a[href*='graph_one']") |> has_element?()
+      refute view |> element("li a[href*='graph_two']") |> has_element?()
+    end
   end
 
   describe "Show" do
