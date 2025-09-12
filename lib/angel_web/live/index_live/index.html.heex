@@ -1,6 +1,11 @@
 <h1>Graphs List</h1>
+
+<.form for={%{}} phx-change="filter" phx-debounce="300">
+  <.input type="text" name="q" placeholder="Filter graphs..." value={@filter} />
+</.form>
+
 <ul>
-  <%= Enum.map(@graphs, fn g -> %>
+  <%= Enum.map(@filtered_graphs, fn g -> %>
     <li>
       <a href={"/graphs/#{g.short_name}"}>
         <span>
