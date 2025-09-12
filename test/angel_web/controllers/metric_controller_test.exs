@@ -1,5 +1,11 @@
 defmodule AngelWeb.MetricControllerTest do
   use AngelWeb.ConnCase
+  import Mox
+
+  setup do
+    stub(Angel.Junior.Mock, :trace, fn _a, _b -> :ok end)
+    :ok
+  end
 
   test "create returns 201 for valid metric data", %{conn: conn} do
     Angel.Graphs.Mock

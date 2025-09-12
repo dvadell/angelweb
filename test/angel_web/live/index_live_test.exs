@@ -3,7 +3,13 @@ defmodule AngelWeb.IndexLiveTest do
 
   import Angel.MetricsFixtures
   import Phoenix.LiveViewTest
+  import Mox
   alias Angel.GraphsFixtures
+
+  setup do
+    stub(Angel.Junior.Mock, :trace, fn _a, _b -> :ok end)
+    :ok
+  end
 
   describe "Index" do
     test "lists all graphs", %{conn: conn} do
