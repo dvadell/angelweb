@@ -6,6 +6,8 @@ defmodule AngelWeb.Schemas.IncomingMetricPayload do
   use Ecto.Schema
   import Ecto.Changeset
 
+  @type t :: %__MODULE__{}
+
   embedded_schema do
     field :short_name, :string
     field :units, :string, default: ""

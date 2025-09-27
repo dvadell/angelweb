@@ -6,6 +6,8 @@ defmodule Angel.Metrics do
 
   alias Angel.Repo
 
+  @type t :: %__MODULE__{}
+
   # Use no_primary_key for schemas without a primary key
   @primary_key false
   schema "metrics" do
