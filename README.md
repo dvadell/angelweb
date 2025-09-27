@@ -20,8 +20,11 @@ To test it with curl
 
 ## Running tests
 ```
-docker compose run -e MIX_ENV=test web mix reset
-docker compose run -e MIX_ENV=test web mix test
+mix format
+mix credo
+mix dialyzer
+mix sobelow --skip
+MIX_ENV=test mix test
 ```
 
 ## Web Interface

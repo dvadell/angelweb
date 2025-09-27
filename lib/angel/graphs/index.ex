@@ -3,6 +3,19 @@ defmodule Angel.Graphs.Index do
   use Ecto.Schema
   import Ecto.Changeset
 
+  @type t :: %__MODULE__{
+          __meta__: Ecto.Schema.Metadata.t(),
+          short_name: String.t(),
+          units: String.t() | nil,
+          title: String.t() | nil,
+          notes: String.t() | nil,
+          min_value: float() | nil,
+          max_value: float() | nil,
+          graph_type: String.t() | nil,
+          inserted_at: DateTime.t(),
+          updated_at: DateTime.t()
+        }
+
   schema "graphs" do
     field :short_name, :string
     field :units, :string
