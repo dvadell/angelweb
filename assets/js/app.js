@@ -133,8 +133,13 @@ let ChartHook = {
 
   appendDataToChart(value, timestamp) {
     if (this.chart) {
+      // Add the new timestamp (which is already in milliseconds) to the labels
       this.chart.data.labels.push(timestamp);
-      this.chart.data.datasets[0].data.push(value);
+      this.chart.data.datasets[0].data.push(value); // actual
+      this.chart.data.datasets[1].data.push(null);  // forecast
+      this.chart.data.datasets[2].data.push(null);  // upper_bound
+      this.chart.data.datasets[3].data.push(null);  // lower_bound
+      
       this.chart.update();
     }
   },
@@ -151,27 +156,18 @@ let ChartHook = {
       const hours = minutes / 60;
       const days = hours / 24;
 
-      if (days >= 1) {
-        return `${days.toFixed(1)}d`;
-      } else if (hours >= 1) {
-        return `${hours.toFixed(1)}hr`;
-      } else if (minutes >= 1) {
-        return `${minutes.toFixed(1)}min`;
-      } else if (seconds >= 1) {
-        return `${seconds.toFixed(1)}s`;
-      } else {
-        return `${ms.toFixed(0)}ms`;
-      }
+      if (days >= 1) { return `${days.toFixed(1)}d`; }
+      if (hours >= 1) { return `${hours.toFixed(1)}hr`; }
+      if (minutes >= 1) { return `${minutes.toFixed(1)}min`; }
+      if (seconds >= 1) { return `${seconds.toFixed(1)}s`; }
+      return `${ms.toFixed(0)}ms`;
     };
     
-    if (!data || !data[0] || !data[0].datapoints) {
-      console.warn('Invalid chart data structure:', data);
+    // Check if data is in the new format. If not, it might be an error fallback.
+    if (!data || !data.dates) {
+      console.warn('Chart data is not in the expected format, aborting render.', data);
       return;
     }
-
-    const dataPoints = data[0].datapoints;
-    const lastTimestamp = dataPoints.length > 0 ? dataPoints[dataPoints.length - 1][1] : Date.now();
-    
 
     // Destroy existing chart if any
     if (this.chart) {
@@ -184,93 +180,119 @@ let ChartHook = {
     this.chart = new Chart(ctx, {
       type: 'line',
       data: {
-        labels: data[0].datapoints.map(item => item[1]),
-        datasets: [{
-          label: data[0].target || 'Data',
-          data: data[0].datapoints.map(item => item[0])
-        }]
+        labels: data.dates,
+        datasets: [
+          {
+            label: data.actual_label || 'Actual',
+            data: data.actual,
+            borderColor: '#2563eb',
+            borderWidth: 2,
+            pointRadius: 2,
+            tension: 0.1,
+          },
+          {
+            label: 'Forecast',
+            data: data.forecast,
+            borderColor: '#dc2626',
+            borderWidth: 2,
+            borderDash: [5, 5],
+            pointRadius: 2,
+            tension: 0.1,
+          },
+          {
+            label: 'Upper Bound',
+            data: data.upper_bound,
+            borderColor: 'rgba(220, 38, 38, 0.3)',
+            backgroundColor: 'rgba(220, 38, 38, 0.1)',
+            borderWidth: 1,
+            pointRadius: 0,
+            fill: '+1', // Fill to the dataset at index 3 (Lower Bound)
+            tension: 0.1,
+          },
+          {
+            label: 'Lower Bound',
+            data: data.lower_bound,
+            borderColor: 'rgba(220, 38, 38, 0.3)',
+            backgroundColor: 'rgba(220, 38, 38, 0.1)',
+            borderWidth: 1,
+            pointRadius: 0,
+            fill: false, // Don't fill the lower bound itself
+            tension: 0.1,
+          }
+        ]
       },
       options: {
-        animation: false,
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
         scales: {
           x: {
-            type: 'timestack'
+            type: 'timestack',
+            title: {
+              display: true,
+              text: 'Date'
+            }
           },
           y: {
+            title: {
+              display: true,
+              text: 'Value'
+            },
             ticks: {
-              callback: function(value, index, ticks) {
-                if (data[0].graph_type === 'time') {
+              callback: (value) => {
+                if (data.graph_type === 'time') {
                   return formatDuration(value);
-                } else {
-                  return value;
                 }
+                return value;
               }
             }
           }
         },
         plugins: {
-          tooltip: {
-            callbacks: {
-              label: function(context) {
-                let label = context.dataset.label || '';
-                if (label) {
-                  label += ': ';
-                }
-                if (data[0].graph_type === 'time') {
-                  label += formatDuration(context.raw);
-                } else {
-                  label += context.raw;
-                }
-                return label;
-              }
-            }
-          },
           zoom: {
             zoom: {
               wheel: { enabled: true },
               pinch: { enabled: true },
               mode: 'x',
-              onZoomComplete: (context) => {
-                this.handleZoom(context);
-              }
+              onZoomComplete: (context) => this.handleZoom(context)
             },
             pan: { 
               enabled: true,
               mode: 'x',
-              onPanComplete: (context) => {
-                this.handlePan(context);
-              }
+              onPanComplete: (context) => this.handlePan(context)
             }
           },
           annotation: {
-            // See https://www.chartjs.org/chartjs-plugin-annotation/latest/guide/types/line.html
             annotations: {
-              ...(typeof data[0].min_value === 'number' && {
+              ...(typeof data.min_value === 'number' && {
                 minLine: {
                   type: 'line',
-                  yMin: data[0].min_value,
-                  yMax: data[0].min_value,
+                  yMin: data.min_value,
+                  yMax: data.min_value,
                   borderColor: 'rgb(255, 150, 150)',
                   borderDash: [10, 10],
                   borderWidth: 2,
                   label: {
-                    content: `Min: ${data[0].graph_type === 'time' ? formatDuration(data[0].min_value) : data[0].min_value}`,
+                    content: `Min: ${data.graph_type === 'time' ? formatDuration(data.min_value) : data.min_value}`,
                     display: true,
                     backgroundColor: 'rgba(255, 150, 150, 0.3)',
                     color: '000',
                   }
                 }
               }),
-              ...(typeof data[0].max_value === 'number' && {
+              ...(typeof data.max_value === 'number' && {
                 maxLine: {
                   type: 'line',
-                  yMin: data[0].max_value,
-                  yMax: data[0].max_value,
+                  yMin: data.max_value,
+                  yMax: data.max_value,
                   borderColor: 'rgb(255, 150, 150)',
                   borderDash: [10, 10],
                   borderWidth: 2,
                   label: {
-                    content: `Max: ${data[0].graph_type === 'time' ? formatDuration(data[0].max_value) : data[0].max_value}`,
+                    content: `Max: ${data.graph_type === 'time' ? formatDuration(data.max_value) : data.max_value}`,
                     display: true,
                     backgroundColor: 'rgba(255, 150, 150, 0.3)',
                     color: '000',
@@ -278,9 +300,25 @@ let ChartHook = {
                 }
               })
             }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                let label = context.dataset.label || '';
+                if (label) { label += ': '; }
+                if (context.parsed.y !== null) {
+                  if (data.graph_type === 'time') {
+                    label += formatDuration(context.parsed.y);
+                  } else {
+                    label += context.parsed.y.toFixed(2);
+                  }
+                }
+                return label;
+              }
+            }
           }
         }
-      },
+      }
     });
     
     window.chart = this.chart;

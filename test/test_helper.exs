@@ -2,9 +2,11 @@
 
 ExUnit.start()
 
+Mox.defmock(Angel.Junior.Mock, for: Angel.Junior.Behaviour)
 Mox.defmock(Angel.Graphs.Mock, for: Angel.Graphs.Behaviour)
 Mox.defmock(Angel.Events.Mock, for: Angel.Events.Behaviour)
 Mox.defmock(Angel.Repo.Mock, for: Angel.Repo.Behaviour)
+Mox.defmock(Angel.Metrics.Mock, for: Angel.Metrics.Behaviour)
 
 Ecto.Adapters.SQL.Sandbox.mode(Angel.Repo, :manual)
 {:ok, _pid} = Angel.NonTransactionalRepo.start_link(pool_size: 1)

@@ -3,14 +3,37 @@ defmodule Angel.GraphsTest do
 
   alias Angel.Graphs
 
+  Mox.defmock(GraphsMock, for: Angel.Graphs.Behaviour)
+  Mox.defmock(MetricsMock, for: Angel.Metrics.Behaviour)
+
   describe "graphs" do
     alias Angel.Graphs.Index
 
     import Angel.GraphsFixtures
+    import Angel.MetricsFixtures
 
     @invalid_attrs %{short_name: nil}
 
     test "list_graphs/0 returns all graphs" do
+      stub_with(GraphsMock, Angel.Graphs)
+      stub_with(MetricsMock, Angel.Metrics)
+
+      expect(GraphsMock, :create_or_update_graph, fn %{
+                                                       "short_name" => "angel_graphs_fetch_timescaledb_data",
+                                                       "units" => "ms",
+                                                       "graph_type" => "time"
+                                                     } ->
+        {:ok, %{}}
+      end)
+
+      expect(MetricsMock, :add_metric, fn %{
+                                            name: "angel_graphs_fetch_timescaledb_data",
+                                            value: _value,
+                                            timestamp: _timestamp
+                                          } ->
+        {:ok, %{}}
+      end)
+
       index = index_fixture()
       [returned_graph] = Graphs.list_graphs()
       assert returned_graph.id == index.id
@@ -58,6 +81,33 @@ defmodule Angel.GraphsTest do
       index = index_fixture()
       assert %Ecto.Changeset{} = Graphs.change_index(index)
     end
+
+    test "list_graphs/0 returns sparkline data" do
+      stub_with(GraphsMock, Angel.Graphs)
+      stub_with(MetricsMock, Angel.Metrics)
+
+      expect(GraphsMock, :create_or_update_graph, fn %{
+                                                       "short_name" => "angel_graphs_fetch_timescaledb_data",
+                                                       "units" => "ms",
+                                                       "graph_type" => "time"
+                                                     } ->
+        {:ok, %{}}
+      end)
+
+      expect(MetricsMock, :add_metric, fn %{name: "my_graph", value: _value, timestamp: _timestamp} ->
+        {:ok, %{}}
+      end)
+
+      index_fixture(%{short_name: "my_graph"})
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      for i <- 1..10 do
+        metric_fixture(%{name: "my_graph", value: i, timestamp: DateTime.add(now, -i, :minute)})
+      end
+
+      [returned_graph] = Graphs.list_graphs()
+      assert length(returned_graph.sparkline) <= 6
+    end
   end
 
   describe "fetch_timescaledb_data/3" do
@@ -66,11 +116,12 @@ defmodule Angel.GraphsTest do
 
     test "returns data points for a given graph and time range" do
       graph = index_fixture(%{short_name: "my_graph"})
-      metric_fixture(%{name: "my_graph", value: 10.0, timestamp: ~U[2025-08-21 12:00:00Z]})
-      metric_fixture(%{name: "my_graph", value: 20.0, timestamp: ~U[2025-08-21 12:01:00Z]})
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      metric_fixture(%{name: "my_graph", value: 10.0, timestamp: DateTime.add(now, -1, :minute)})
+      metric_fixture(%{name: "my_graph", value: 20.0, timestamp: now})
 
-      start_time = ~U[2025-08-21 11:59:00Z]
-      end_time = ~U[2025-08-21 12:02:00Z]
+      start_time = DateTime.add(now, -2, :minute)
+      end_time = DateTime.add(now, 1, :minute)
 
       {:ok, result} = Graphs.fetch_timescaledb_data(graph.short_name, start_time, end_time)
 

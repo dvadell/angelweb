@@ -1,9 +1,12 @@
 defmodule Angel.Metrics do
   @moduledoc "The Metrics context."
+  @behaviour Angel.Metrics.Behaviour
   use Ecto.Schema
   import Ecto.Changeset
 
   alias Angel.Repo
+
+  @type t :: %__MODULE__{}
 
   # Use no_primary_key for schemas without a primary key
   @primary_key false

@@ -44,3 +44,4 @@ config :phoenix_live_view,
   enable_expensive_runtime_checks: true
 
 config :angel, Angel.Graphs, Angel.Graphs.Mock
+config :angel, Angel.Junior, Angel.Junior.Mock
