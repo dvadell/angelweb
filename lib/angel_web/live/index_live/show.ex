@@ -265,14 +265,24 @@ defmodule AngelWeb.IndexLive.Show do
     end
   end
 
-  defp fetch_and_push_data(socket, start_time, end_time) do
+  @doc """
+  Fetches historical and forecast data for a given time range and pushes it to the client.
+
+  This function orchestrates fetching data from both the primary database and the
+  forecasting service. It then transforms and combines this data into a
+  columnar format suitable for rendering by Chart.js on the frontend.
+
+  If the database fetch fails, it pushes an empty chart structure.
+  """
+  @spec fetch_and_push_data(Phoenix.LiveView.Socket.t(), DateTime.t(), DateTime.t()) ::
+          Phoenix.LiveView.Socket.t()
+  def fetch_and_push_data(socket, start_time, end_time) do
     graph_name = socket.assigns.graph_name
 
     case Junior.trace("angel_graphs_fetch_timescaledb_data", fn ->
            Angel.Graphs.fetch_timescaledb_data(graph_name, start_time, end_time)
          end) do
-      {:ok, data} ->
-        # Fetch forecast data, defaulting to an empty list on failure.
+      {:ok, historical_data} ->
         forecast_points =
           case fetch_forecast_data(graph_name) do
             {:ok, points} ->
@@ -284,69 +294,64 @@ defmodule AngelWeb.IndexLive.Show do
               []
           end
 
-        # The main data series from the database is the first element in the `data` list.
-        actual_series = List.first(data)
-
-        # Create a map of {timestamp => value} for quick lookups from the historical data.
-        actual_map =
-          Enum.into(actual_series.datapoints, %{}, fn [value, timestamp] -> {timestamp, value} end)
-
-        # Create maps for the forecast data from the (potentially empty) forecast_points list.
-        forecast_maps =
-          Enum.reduce(forecast_points, %{predicted: %{}, lower: %{}, upper: %{}}, fn point, acc ->
-            {:ok, dt, 0} = DateTime.from_iso8601(point["timestamp"] <> "Z")
-            timestamp = DateTime.to_unix(dt, :millisecond)
-
-            predicted_map = Map.put(acc.predicted, timestamp, point["predicted_value"])
-            lower_map = Map.put(acc.lower, timestamp, point["lower_bound"])
-            upper_map = Map.put(acc.upper, timestamp, point["upper_bound"])
-
-            %{predicted: predicted_map, lower: lower_map, upper: upper_map}
-          end)
-
-        # Create a single, sorted, unique timeline from all available timestamps.
-        all_timestamps =
-          (Map.keys(actual_map) ++ Map.keys(forecast_maps.predicted))
-          |> Enum.uniq()
-          |> Enum.sort()
-
-        # Get graph metadata from the socket assigns.
-        graph = socket.assigns.graph
-
-        # Construct the final payload in the new columnar format.
-        payload = %{
-          dates: all_timestamps,
-          actual: Enum.map(all_timestamps, &Map.get(actual_map, &1)),
-          forecast: Enum.map(all_timestamps, &Map.get(forecast_maps.predicted, &1)),
-          lower_bound: Enum.map(all_timestamps, &Map.get(forecast_maps.lower, &1)),
-          upper_bound: Enum.map(all_timestamps, &Map.get(forecast_maps.upper, &1)),
-          actual_label: actual_series.target,
-          graph_type: graph.graph_type,
-          min_value: graph.min_value,
-          max_value: graph.max_value
-        }
-
+        payload = prepare_chart_payload(historical_data, forecast_points, socket.assigns.graph)
         push_event(socket, "chart:data_loaded", %{data: payload})
 
       {:error, _e} ->
-        # Send empty data structure on error
-        graph = socket.assigns.graph
-        min_value = graph.min_value
-        max_value = graph.max_value
-        graph_type = graph.graph_type
-
-        empty_data = [
-          %{
-            datapoints: [],
-            target: graph_name,
-            min_value: min_value,
-            max_value: max_value,
-            graph_type: graph_type
-          }
-        ]
-
-        push_event(socket, "chart:data_loaded", %{data: empty_data})
+        payload = build_empty_chart_data(graph_name, socket.assigns.graph)
+        push_event(socket, "chart:data_loaded", %{data: payload})
     end
+  end
+
+  defp prepare_chart_payload(historical_data, forecast_points, graph) do
+    actual_series = List.first(historical_data)
+
+    actual_map =
+      Enum.into(actual_series.datapoints, %{}, fn [value, timestamp] -> {timestamp, value} end)
+
+    forecast_maps = transform_forecast_points(forecast_points)
+
+    all_timestamps =
+      (Map.keys(actual_map) ++ Map.keys(forecast_maps.predicted))
+      |> Enum.uniq()
+      |> Enum.sort()
+
+    %{
+      dates: all_timestamps,
+      actual: Enum.map(all_timestamps, &Map.get(actual_map, &1)),
+      forecast: Enum.map(all_timestamps, &Map.get(forecast_maps.predicted, &1)),
+      lower_bound: Enum.map(all_timestamps, &Map.get(forecast_maps.lower, &1)),
+      upper_bound: Enum.map(all_timestamps, &Map.get(forecast_maps.upper, &1)),
+      actual_label: actual_series.target,
+      graph_type: graph.graph_type,
+      min_value: graph.min_value,
+      max_value: graph.max_value
+    }
+  end
+
+  defp transform_forecast_points(forecast_points) do
+    Enum.reduce(forecast_points, %{predicted: %{}, lower: %{}, upper: %{}}, fn point, acc ->
+      {:ok, dt, 0} = DateTime.from_iso8601(point["timestamp"] <> "Z")
+      timestamp = DateTime.to_unix(dt, :millisecond)
+
+      predicted_map = Map.put(acc.predicted, timestamp, point["predicted_value"])
+      lower_map = Map.put(acc.lower, timestamp, point["lower_bound"])
+      upper_map = Map.put(acc.upper, timestamp, point["upper_bound"])
+
+      %{predicted: predicted_map, lower: lower_map, upper: upper_map}
+    end)
+  end
+
+  defp build_empty_chart_data(graph_name, graph) do
+    [
+      %{
+        datapoints: [],
+        target: graph_name,
+        min_value: graph.min_value,
+        max_value: graph.max_value,
+        graph_type: graph.graph_type
+      }
+    ]
   end
 
   defp fetch_forecast_data(graph_name) do
@@ -360,7 +365,7 @@ defmodule AngelWeb.IndexLive.Show do
           {:ok, %{"forecast_points" => points}} ->
             {:ok, points}
 
-          _ ->
+          _unmatched_json ->
             {:error, :json_parsing}
         end
 
