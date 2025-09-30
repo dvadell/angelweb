@@ -32,7 +32,7 @@ let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("
 let ChartHook = {
   mounted() {
     Chart.register(zoomPlugin, annotationPlugin);
-    console.log('Chart hook mounted - requesting initial data');
+    console.log('Chart hook mounted');
     
     // Initialize event queue for when connection is lost
     this.eventQueue = [];
@@ -59,18 +59,6 @@ let ChartHook = {
     };
     
     window.addEventListener("phx:page-loading-stop", this.handleReconnected);
-    
-    // Request initial data from LiveView (with retry if not connected)
-    this.requestInitialData();
-  },
-
-  requestInitialData() {
-    if (window.liveSocket.isConnected()) {
-      this.pushEvent("get_initial_data", {});
-    } else {
-      console.log('LiveView not connected yet, retrying in 100ms...');
-      setTimeout(() => this.requestInitialData(), 100);
-    }
   },
 
   queueEvent(eventName, payload) {

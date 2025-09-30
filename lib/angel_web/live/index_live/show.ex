@@ -1,49 +1,52 @@
 defmodule AngelWeb.IndexLive.Show do
   use AngelWeb, :live_view
-  alias Angel.Graphs
+
   alias Angel.Graphs.Index
-  alias Angel.Junior
   alias Jason
 
   require Logger
 
+  defp graphs_module, do: Application.get_env(:angel, :graphs, Angel.Graphs)
+  defp events_module, do: Application.get_env(:angel, :events, Angel.Events)
+  defp junior_module, do: Application.get_env(:angel, :junior, Angel.Junior)
+  defp http_client_module, do: Application.get_env(:angel, :http_client, HTTPoison)
+
   @impl true
   def mount(%{"id" => graph_name}, _session, socket) do
     graph =
-      Graphs.get_by_short_name(graph_name) ||
+      graphs_module().get_by_short_name(graph_name) ||
         %Index{short_name: graph_name, title: "", notes: ""}
 
-    # Create the form changeset
     changeset = Index.changeset(graph, %{})
 
-    if connected?(socket), do: Phoenix.PubSub.subscribe(Angel.PubSub, "new_metric:#{graph_name}")
+    socket =
+      socket
+      |> assign(:events, events_module().for_graph(graph_name))
+      |> assign(:graph_name, graph_name)
+      |> assign(:graph, graph)
+      |> assign(:form, to_form(changeset))
+      |> assign(:show_form, false)
+      |> assign(:show_events, false)
+      |> assign(:show_notes, false)
+      |> assign(:show_debug, false)
+      |> assign(:metrics_count, graphs_module().count_metrics(graph_name))
+      |> assign(:first_metric_at, graphs_module().first_metric_timestamp(graph_name))
+      |> assign(:last_metric_at, graphs_module().last_metric_timestamp(graph_name))
+      |> assign(:chart_is_playing, true)
 
-    metrics_count = Graphs.count_metrics(graph_name)
-    first_metric_at = Graphs.first_metric_timestamp(graph_name)
-    last_metric_at = Graphs.last_metric_timestamp(graph_name)
+    socket =
+      if connected?(socket) do
+        Phoenix.PubSub.subscribe(Angel.PubSub, "new_metric:#{graph_name}")
 
-    {:ok,
-     socket
-     |> assign(:events, Angel.Events.for_graph(graph_name))
-     |> assign(:graph_name, graph_name)
-     |> assign(:graph, graph)
-     |> assign(:form, to_form(changeset))
-     |> assign(:show_form, false)
-     |> assign(:show_events, false)
-     |> assign(:show_notes, false)
-     |> assign(:show_debug, false)
-     |> assign(:metrics_count, metrics_count)
-     |> assign(:first_metric_at, first_metric_at)
-     |> assign(:last_metric_at, last_metric_at)
-     |> assign(:chart_is_playing, true)}
-  end
+        end_time = DateTime.utc_now()
+        # 24 hours
+        start_time = DateTime.add(end_time, -86_400, :second)
+        fetch_and_push_data(socket, start_time, end_time)
+      else
+        socket
+      end
 
-  @impl true
-  def handle_event("get_initial_data", _params, socket) do
-    end_time = DateTime.utc_now()
-    # 24 hours
-    start_time = DateTime.add(end_time, -86_400, :second)
-    {:noreply, fetch_and_push_data(socket, start_time, end_time)}
+    {:ok, socket}
   end
 
   @impl true
@@ -111,13 +114,11 @@ defmodule AngelWeb.IndexLive.Show do
 
   @impl true
   def handle_event("save", %{"index" => graph_params}, socket) do
-    # Add the short_name to the params since it's needed for save
     graph_params = Map.put(graph_params, "short_name", socket.assigns.graph_name)
     graph_params = Map.update(graph_params, "notes", "", &HtmlSanitizeEx.markdown_html/1)
 
-    case Graphs.create_or_update_graph(graph_params) do
+    case graphs_module().create_or_update_graph(graph_params) do
       {:ok, graph} ->
-        # Update both the graph and create a new clean form
         changeset = Index.changeset(graph, graph_params)
 
         {:noreply,
@@ -128,7 +129,6 @@ defmodule AngelWeb.IndexLive.Show do
          |> put_flash(:info, "Graph saved successfully!")}
 
       {:error, changeset} ->
-        # Show validation errors in the form
         {:noreply, assign(socket, :form, to_form(changeset))}
     end
   end
@@ -143,21 +143,18 @@ defmodule AngelWeb.IndexLive.Show do
          {:ok, end_time, _utc_offset} <- DateTime.from_iso8601(end_time_str) do
       graph_name = socket.assigns.graph_name
 
-      case Junior.trace("angel_graphs_fetch_timescaledb_data", fn ->
-             Angel.Graphs.fetch_timescaledb_data(graph_name, start_time, end_time)
+      case junior_module().trace("angel_graphs_fetch_timescaledb_data", fn ->
+             graphs_module().fetch_timescaledb_data(graph_name, start_time, end_time)
            end) do
         {:ok, new_data} ->
           graph = socket.assigns.graph
-          min_value = graph.min_value
-          max_value = graph.max_value
-          graph_type = graph.graph_type
 
           updated_data =
             Enum.map(new_data, fn item ->
               Map.merge(item, %{
-                min_value: min_value,
-                max_value: max_value,
-                graph_type: graph_type
+                min_value: graph.min_value,
+                max_value: graph.max_value,
+                graph_type: graph.graph_type
               })
             end)
 
@@ -172,37 +169,34 @@ defmodule AngelWeb.IndexLive.Show do
     end
   end
 
-  # Handle pan/zoom events from the chart
   @impl true
   def handle_event(
         "chart_zoomed",
         %{"visible_range" => %{"min" => min_ms, "max" => max_ms}, "zoom_level" => _level},
         socket
       ) do
-    # Convert milliseconds to DateTime
     min_time = DateTime.from_unix!(trunc(min_ms), :millisecond)
     max_time = DateTime.from_unix!(trunc(max_ms), :millisecond)
 
-    # Add small buffer for zoomed data
-    # 5 minutes buffer
     buffer_seconds = 300
     expanded_min = DateTime.add(min_time, -buffer_seconds, :second)
     expanded_max = DateTime.add(max_time, buffer_seconds, :second)
 
     graph_name = socket.assigns.graph_name
 
-    case Junior.trace("angel_graphs_fetch_timescaledb_data", fn ->
-           Angel.Graphs.fetch_timescaledb_data(graph_name, expanded_min, expanded_max)
+    case junior_module().trace("angel_graphs_fetch_timescaledb_data", fn ->
+           graphs_module().fetch_timescaledb_data(graph_name, expanded_min, expanded_max)
          end) do
       {:ok, new_data} ->
         graph = socket.assigns.graph
-        min_value = graph.min_value
-        max_value = graph.max_value
-        graph_type = graph.graph_type
 
         updated_data =
           Enum.map(new_data, fn item ->
-            Map.merge(item, %{min_value: min_value, max_value: max_value, graph_type: graph_type})
+            Map.merge(item, %{
+              min_value: graph.min_value,
+              max_value: graph.max_value,
+              graph_type: graph.graph_type
+            })
           end)
 
         {:noreply, push_event(socket, "chart:data_loaded", %{data: updated_data})}
@@ -218,30 +212,28 @@ defmodule AngelWeb.IndexLive.Show do
         %{"visible_range" => %{"min" => min_ms, "max" => max_ms}},
         socket
       ) do
-    # Convert milliseconds to DateTime
     min_time = DateTime.from_unix!(trunc(min_ms), :millisecond)
     max_time = DateTime.from_unix!(trunc(max_ms), :millisecond)
 
-    # Add some buffer around the visible range to preload data
-    # 1 hour buffer on each side
     buffer_seconds = 3600
     expanded_min = DateTime.add(min_time, -buffer_seconds, :second)
     expanded_max = DateTime.add(max_time, buffer_seconds, :second)
 
     graph_name = socket.assigns.graph_name
 
-    case Junior.trace("angel_graphs_fetch_timescaledb_data", fn ->
-           Angel.Graphs.fetch_timescaledb_data(graph_name, expanded_min, expanded_max)
+    case junior_module().trace("angel_graphs_fetch_timescaledb_data", fn ->
+           graphs_module().fetch_timescaledb_data(graph_name, expanded_min, expanded_max)
          end) do
       {:ok, new_data} ->
         graph = socket.assigns.graph
-        min_value = graph.min_value
-        max_value = graph.max_value
-        graph_type = graph.graph_type
 
         updated_data =
           Enum.map(new_data, fn item ->
-            Map.merge(item, %{min_value: min_value, max_value: max_value, graph_type: graph_type})
+            Map.merge(item, %{
+              min_value: graph.min_value,
+              max_value: graph.max_value,
+              graph_type: graph.graph_type
+            })
           end)
 
         {:noreply, push_event(socket, "chart:data_loaded", %{data: updated_data})}
@@ -254,7 +246,6 @@ defmodule AngelWeb.IndexLive.Show do
   @impl true
   def handle_info({:new_metric, metric, timestamp}, socket) do
     if socket.assigns.chart_is_playing do
-      # Push the new data point to the client
       {:noreply,
        push_event(socket, "chart:new_data", %{
          value: metric.graph_value,
@@ -265,22 +256,12 @@ defmodule AngelWeb.IndexLive.Show do
     end
   end
 
-  @doc """
-  Fetches historical and forecast data for a given time range and pushes it to the client.
-
-  This function orchestrates fetching data from both the primary database and the
-  forecasting service. It then transforms and combines this data into a
-  columnar format suitable for rendering by Chart.js on the frontend.
-
-  If the database fetch fails, it pushes an empty chart structure.
-  """
-  @spec fetch_and_push_data(Phoenix.LiveView.Socket.t(), DateTime.t(), DateTime.t()) ::
-          Phoenix.LiveView.Socket.t()
-  def fetch_and_push_data(socket, start_time, end_time) do
+  # Fetches and prepares data, then pushes it to the client.
+  defp fetch_and_push_data(socket, start_time, end_time) do
     graph_name = socket.assigns.graph_name
 
-    case Junior.trace("angel_graphs_fetch_timescaledb_data", fn ->
-           Angel.Graphs.fetch_timescaledb_data(graph_name, start_time, end_time)
+    case junior_module().trace("angel_graphs_fetch_timescaledb_data", fn ->
+           graphs_module().fetch_timescaledb_data(graph_name, start_time, end_time)
          end) do
       {:ok, historical_data} ->
         forecast_points =
@@ -359,7 +340,7 @@ defmodule AngelWeb.IndexLive.Show do
     body = Jason.encode!(%{"hours_ahead" => 24, "confidence_interval" => 0.95})
     headers = [{"Content-Type", "application/json"}]
 
-    case HTTPoison.post(url, body, headers) do
+    case http_client_module().post(url, body, headers) do
       {:ok, %HTTPoison.Response{status_code: 200, body: response_body}} ->
         case Jason.decode(response_body) do
           {:ok, %{"forecast_points" => points}} ->
