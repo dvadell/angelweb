@@ -30,6 +30,8 @@ defmodule AngelWeb.IndexLive.Show do
       |> assign(:show_notes, false)
       |> assign(:show_debug, false)
       |> assign(:show_forecast, false)
+      |> assign(:loading_forecast, false)
+      |> assign(:forecast_points, [])
       |> assign(:metrics_count, graphs_module().count_metrics(graph_name))
       |> assign(:first_metric_at, graphs_module().first_metric_timestamp(graph_name))
       |> assign(:last_metric_at, graphs_module().last_metric_timestamp(graph_name))
@@ -86,9 +88,24 @@ defmodule AngelWeb.IndexLive.Show do
   @impl true
   def handle_event("toggle_forecast", _params, socket) do
     show_forecast = not socket.assigns.show_forecast
-    socket = assign(socket, :show_forecast, show_forecast)
 
-    {:noreply, fetch_and_push_data(socket, socket.assigns.start_time, socket.assigns.end_time)}
+    if show_forecast do
+      send(self(), :fetch_forecast_data)
+
+      socket =
+        socket
+        |> assign(:show_forecast, true)
+        |> assign(:loading_forecast, true)
+
+      {:noreply, socket}
+    else
+      socket =
+        socket
+        |> assign(:show_forecast, false)
+        |> assign(:forecast_points, [])
+
+      {:noreply, fetch_and_push_data(socket, socket.assigns.start_time, socket.assigns.end_time)}
+    end
   end
 
   @impl true
@@ -260,6 +277,29 @@ defmodule AngelWeb.IndexLive.Show do
     end
   end
 
+  @impl true
+  def handle_info(:fetch_forecast_data, socket) do
+    graph_name = socket.assigns.graph_name
+
+    socket =
+      case fetch_forecast_data(graph_name) do
+        {:ok, points} ->
+          Logger.info("Successfully fetched forecast data for #{graph_name}")
+          assign(socket, :forecast_points, points)
+
+        {:error, reason} ->
+          Logger.error("Failed to fetch forecast data for #{graph_name}: #{inspect(reason)}")
+          socket
+      end
+
+    socket =
+      socket
+      |> assign(:loading_forecast, false)
+      |> fetch_and_push_data(socket.assigns.start_time, socket.assigns.end_time)
+
+    {:noreply, socket}
+  end
+
   # Fetches and prepares data, then pushes it to the client.
   defp fetch_and_push_data(socket, start_time, end_time) do
     graph_name = socket.assigns.graph_name
@@ -268,20 +308,7 @@ defmodule AngelWeb.IndexLive.Show do
            graphs_module().fetch_timescaledb_data(graph_name, start_time, end_time)
          end) do
       {:ok, historical_data} ->
-        forecast_points =
-          if socket.assigns.show_forecast do
-            case fetch_forecast_data(graph_name) do
-              {:ok, points} ->
-                Logger.info("Successfully fetched forecast data for #{graph_name}")
-                points
-
-              {:error, reason} ->
-                Logger.error("Failed to fetch forecast data for #{graph_name}: #{inspect(reason)}")
-                []
-            end
-          else
-            []
-          end
+        forecast_points = socket.assigns.forecast_points
 
         payload = prepare_chart_payload(historical_data, forecast_points, socket.assigns.graph)
         push_event(socket, "chart:data_loaded", %{data: payload})
