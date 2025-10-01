@@ -127,7 +127,7 @@ async def forecast_metric(metric_name: str, request: ForecastRequest = ForecastR
         
         # The forecast dataframe contains both historical predictions and future values.
         # We extract only the future points for the final response.
-        future_forecast = forecast.tail(request.hours_ahead)
+        future_forecast = forecast.tail(request.hours_ahead * 2)
         forecast_points = [
             ForecastPoint(
                 timestamp=row['ds'],
