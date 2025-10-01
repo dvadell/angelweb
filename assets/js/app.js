@@ -169,45 +169,53 @@ let ChartHook = {
       type: 'line',
       data: {
         labels: data.dates,
-        datasets: [
-          {
-            label: data.actual_label || 'Actual',
-            data: data.actual,
-            borderColor: '#2563eb',
-            borderWidth: 2,
-            pointRadius: 2,
-            tension: 0.1,
-          },
-          {
-            label: 'Forecast',
-            data: data.forecast,
-            borderColor: '#dc2626',
-            borderWidth: 2,
-            borderDash: [5, 5],
-            pointRadius: 2,
-            tension: 0.1,
-          },
-          {
-            label: 'Upper Bound',
-            data: data.upper_bound,
-            borderColor: 'rgba(220, 38, 38, 0.3)',
-            backgroundColor: 'rgba(220, 38, 38, 0.1)',
-            borderWidth: 1,
-            pointRadius: 0,
-            fill: '+1', // Fill to the dataset at index 3 (Lower Bound)
-            tension: 0.1,
-          },
-          {
-            label: 'Lower Bound',
-            data: data.lower_bound,
-            borderColor: 'rgba(220, 38, 38, 0.3)',
-            backgroundColor: 'rgba(220, 38, 38, 0.1)',
-            borderWidth: 1,
-            pointRadius: 0,
-            fill: false, // Don't fill the lower bound itself
-            tension: 0.1,
+        datasets: (() => {
+          const datasets = [
+            {
+              label: data.actual_label || 'Actual',
+              data: data.actual,
+              borderColor: '#2563eb',
+              borderWidth: 2,
+              pointRadius: 2,
+              tension: 0.1,
+            }
+          ];
+
+          const hasForecast = data.forecast && data.forecast.some(d => d !== null);
+
+          if (hasForecast) {
+            datasets.push({
+              label: 'Forecast',
+              data: data.forecast,
+              borderColor: '#dc2626',
+              borderWidth: 2,
+              borderDash: [5, 5],
+              pointRadius: 2,
+              tension: 0.1,
+            });
+            datasets.push({
+              label: 'Upper Bound',
+              data: data.upper_bound,
+              borderColor: 'rgba(220, 38, 38, 0.3)',
+              backgroundColor: 'rgba(220, 38, 38, 0.1)',
+              borderWidth: 1,
+              pointRadius: 0,
+              fill: '+1', // Fill to the dataset at the next index (Lower Bound)
+              tension: 0.1,
+            });
+            datasets.push({
+              label: 'Lower Bound',
+              data: data.lower_bound,
+              borderColor: 'rgba(220, 38, 38, 0.3)',
+              backgroundColor: 'rgba(220, 38, 38, 0.1)',
+              borderWidth: 1,
+              pointRadius: 0,
+              fill: false, // Don't fill the lower bound itself
+              tension: 0.1,
+            });
           }
-        ]
+          return datasets;
+        })()
       },
       options: {
         responsive: true,
