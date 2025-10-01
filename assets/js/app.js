@@ -192,6 +192,11 @@ let ChartHook = {
 
     console.log('Creating chart on element:', this.el);
     const ctx = this.el.getContext('2d');
+
+    // Create gradient
+    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+    gradient.addColorStop(0, 'rgba(34, 197, 94, 0.5)');
+    gradient.addColorStop(1, 'rgba(34, 197, 94, 0)');
     
     this.chart = new Chart(ctx, {
       type: 'line',
@@ -202,10 +207,12 @@ let ChartHook = {
             {
               label: data.actual_label || 'Actual',
               data: data.actual,
-              borderColor: '#2563eb',
+              borderColor: '#22c55e',
               borderWidth: 2,
               pointRadius: 2,
               tension: 0.1,
+              fill: true,
+              backgroundColor: gradient,
             }
           ];
 
