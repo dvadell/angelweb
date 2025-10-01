@@ -149,16 +149,8 @@ defmodule AngelWeb.IndexLive.Show do
         {:ok, new_data} ->
           graph = socket.assigns.graph
 
-          updated_data =
-            Enum.map(new_data, fn item ->
-              Map.merge(item, %{
-                min_value: graph.min_value,
-                max_value: graph.max_value,
-                graph_type: graph.graph_type
-              })
-            end)
-
-          {:noreply, push_event(socket, "chart:data_loaded", %{data: updated_data})}
+          payload = prepare_chart_payload(new_data, [], graph)
+          {:noreply, push_event(socket, "chart:data_loaded", %{data: payload})}
 
         {:error, _e} ->
           {:noreply, socket}
@@ -190,16 +182,8 @@ defmodule AngelWeb.IndexLive.Show do
       {:ok, new_data} ->
         graph = socket.assigns.graph
 
-        updated_data =
-          Enum.map(new_data, fn item ->
-            Map.merge(item, %{
-              min_value: graph.min_value,
-              max_value: graph.max_value,
-              graph_type: graph.graph_type
-            })
-          end)
-
-        {:noreply, push_event(socket, "chart:data_loaded", %{data: updated_data})}
+        payload = prepare_chart_payload(new_data, [], graph)
+        {:noreply, push_event(socket, "chart:data_loaded", %{data: payload})}
 
       {:error, _error} ->
         {:noreply, socket}
@@ -227,16 +211,8 @@ defmodule AngelWeb.IndexLive.Show do
       {:ok, new_data} ->
         graph = socket.assigns.graph
 
-        updated_data =
-          Enum.map(new_data, fn item ->
-            Map.merge(item, %{
-              min_value: graph.min_value,
-              max_value: graph.max_value,
-              graph_type: graph.graph_type
-            })
-          end)
-
-        {:noreply, push_event(socket, "chart:data_loaded", %{data: updated_data})}
+        payload = prepare_chart_payload(new_data, [], graph)
+        {:noreply, push_event(socket, "chart:data_loaded", %{data: payload})}
 
       {:error, _error} ->
         {:noreply, socket}

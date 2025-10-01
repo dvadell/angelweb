@@ -117,6 +117,11 @@ def test_forecast_with_custom_parameters(mock_fetch_data, mock_get_metrics, mock
     # Mock the return value of run_prophet_forecast
     original_df = pd.DataFrame(sample_metric_data)
     original_df.rename(columns={'timestamp': 'ds', 'value': 'y'}, inplace=True)
+    # Add yhat, yhat_lower, yhat_upper to original_df for historical data
+    original_df['yhat'] = original_df['y'] # For historical data, yhat can be y
+    original_df['yhat_lower'] = original_df['y'] * 0.9 # Example lower bound
+    original_df['yhat_upper'] = original_df['y'] * 1.1 # Example upper bound
+
     future_df = pd.DataFrame({
         'ds': [datetime.now() + timedelta(hours=i) for i in range(1, custom_hours + 1)],
         'yhat': [100.0] * custom_hours,
@@ -136,9 +141,8 @@ def test_forecast_with_custom_parameters(mock_fetch_data, mock_get_metrics, mock
     assert response.status_code == 200
     # Check that run_prophet_forecast was called with the correct parameters
     mock_to_thread.assert_called_once()
-    call_args = mock_to_thread.call_args[0]
-    assert call_args[1] == custom_hours
-    assert call_args[2] == custom_confidence
+    assert mock_to_thread.call_args.args[2] == custom_hours
+    assert mock_to_thread.call_args.args[3] == custom_confidence
     
     data = response.json()
     assert len(data["forecast_points"]) == custom_hours

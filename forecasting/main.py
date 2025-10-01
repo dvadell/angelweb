@@ -1,5 +1,6 @@
 import os
 import asyncpg
+import logging
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from datetime import datetime, timedelta
@@ -166,8 +167,6 @@ async def forecast_metric(metric_name: str, request: ForecastRequest = ForecastR
         # If the exception is an HTTPException, re-raise it to let FastAPI handle it.
         if isinstance(e, HTTPException):
             raise
-        # If any other exception occurs, catch it and return a generic 500 error
-        # to prevent leaking internal implementation details.
         raise HTTPException(status_code=500, detail=f"Forecasting failed: {str(e)}")
 
 @app.post("/detect_anomalies/{metric_name}")
