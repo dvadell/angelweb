@@ -3,3 +3,29 @@
 @import "tailwindcss/utilities";
 
 /* This file is for your main application CSS */
+
+#chart-wrapper:-webkit-full-screen {
+  background-color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+#chart-wrapper:fullscreen {
+  background-color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+#chart-wrapper:-webkit-full-screen #chart-container {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+#chart-wrapper:fullscreen #chart-container {
+    width: 100% !important;
+    height: 100% !important;
+}

@@ -59,6 +59,34 @@ let ChartHook = {
     };
     
     window.addEventListener("phx:page-loading-stop", this.handleReconnected);
+
+    // Fullscreen button handler
+    const fullscreenBtn = document.getElementById('fullscreen-btn');
+    const chartWrapper = document.getElementById('chart-wrapper');
+    const expandIcon = document.getElementById('fullscreen-expand-icon');
+    const shrinkIcon = document.getElementById('fullscreen-shrink-icon');
+
+    if (fullscreenBtn && chartWrapper && expandIcon && shrinkIcon) {
+      fullscreenBtn.addEventListener('click', () => {
+        if (!document.fullscreenElement) {
+          chartWrapper.requestFullscreen().catch(err => {
+            alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+          });
+        } else {
+          document.exitFullscreen();
+        }
+      });
+
+      document.addEventListener('fullscreenchange', () => {
+        if (document.fullscreenElement) {
+          expandIcon.classList.add('hidden');
+          shrinkIcon.classList.remove('hidden');
+        } else {
+          expandIcon.classList.remove('hidden');
+          shrinkIcon.classList.add('hidden');
+        }
+      });
+    }
   },
 
   queueEvent(eventName, payload) {

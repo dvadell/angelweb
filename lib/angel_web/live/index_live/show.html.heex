@@ -89,6 +89,14 @@
     </div>
   <% end %>
   <div id="chart-wrapper" class="relative">
+    <button id="fullscreen-btn" class="absolute top-2 right-2 z-20 bg-gray-200 p-2 rounded-full hover:bg-gray-300">
+      <span id="fullscreen-expand-icon">
+        <.icon name="hero-arrows-pointing-out" class="w-5 h-5" />
+      </span>
+      <span id="fullscreen-shrink-icon" class="hidden">
+        <.icon name="hero-arrows-pointing-in" class="w-5 h-5" />
+      </span>
+    </button>
     <div
       id="chart-spinner"
       class="absolute hidden inset-0 bg-gray-200 bg-opacity-75 flex items-center justify-center z-10"
