@@ -194,7 +194,7 @@ defmodule AngelWeb.IndexLive.Show do
         {:ok, new_data} ->
           graph = socket.assigns.graph
 
-          payload = prepare_chart_payload(new_data, [], graph)
+          payload = prepare_chart_payload(new_data, socket.assigns.forecast_points, graph)
           {:noreply, push_event(socket, "chart:data_loaded", %{data: payload})}
 
         {:error, _e} ->
@@ -227,7 +227,7 @@ defmodule AngelWeb.IndexLive.Show do
       {:ok, new_data} ->
         graph = socket.assigns.graph
 
-        payload = prepare_chart_payload(new_data, [], graph)
+        payload = prepare_chart_payload(new_data, socket.assigns.forecast_points, graph)
         {:noreply, push_event(socket, "chart:data_loaded", %{data: payload})}
 
       {:error, _error} ->
@@ -256,7 +256,7 @@ defmodule AngelWeb.IndexLive.Show do
       {:ok, new_data} ->
         graph = socket.assigns.graph
 
-        payload = prepare_chart_payload(new_data, [], graph)
+        payload = prepare_chart_payload(new_data, socket.assigns.forecast_points, graph)
         {:noreply, push_event(socket, "chart:data_loaded", %{data: payload})}
 
       {:error, _error} ->
