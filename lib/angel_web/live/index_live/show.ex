@@ -29,6 +29,7 @@ defmodule AngelWeb.IndexLive.Show do
       |> assign(:show_events, false)
       |> assign(:show_notes, false)
       |> assign(:show_debug, false)
+      |> assign(:show_forecast, false)
       |> assign(:metrics_count, graphs_module().count_metrics(graph_name))
       |> assign(:first_metric_at, graphs_module().first_metric_timestamp(graph_name))
       |> assign(:last_metric_at, graphs_module().last_metric_timestamp(graph_name))
@@ -41,7 +42,10 @@ defmodule AngelWeb.IndexLive.Show do
         end_time = DateTime.utc_now()
         # 24 hours
         start_time = DateTime.add(end_time, -86_400, :second)
-        fetch_and_push_data(socket, start_time, end_time)
+
+        socket
+        |> assign(start_time: start_time, end_time: end_time)
+        |> fetch_and_push_data(start_time, end_time)
       else
         socket
       end
@@ -80,6 +84,14 @@ defmodule AngelWeb.IndexLive.Show do
   end
 
   @impl true
+  def handle_event("toggle_forecast", _params, socket) do
+    show_forecast = not socket.assigns.show_forecast
+    socket = assign(socket, :show_forecast, show_forecast)
+
+    {:noreply, fetch_and_push_data(socket, socket.assigns.start_time, socket.assigns.end_time)}
+  end
+
+  @impl true
   def handle_event("toggle_chart_play", _params, socket) do
     {:noreply, assign(socket, :chart_is_playing, not socket.assigns.chart_is_playing)}
   end
@@ -88,28 +100,44 @@ defmodule AngelWeb.IndexLive.Show do
   def handle_event("set_range", %{"range" => "hour"}, socket) do
     end_time = DateTime.utc_now()
     start_time = DateTime.add(end_time, -3600, :second)
-    {:noreply, fetch_and_push_data(socket, start_time, end_time)}
+
+    {:noreply,
+     socket
+     |> assign(start_time: start_time, end_time: end_time)
+     |> fetch_and_push_data(start_time, end_time)}
   end
 
   @impl true
   def handle_event("set_range", %{"range" => "day"}, socket) do
     end_time = DateTime.utc_now()
     start_time = DateTime.add(end_time, -86_400, :second)
-    {:noreply, fetch_and_push_data(socket, start_time, end_time)}
+
+    {:noreply,
+     socket
+     |> assign(start_time: start_time, end_time: end_time)
+     |> fetch_and_push_data(start_time, end_time)}
   end
 
   @impl true
   def handle_event("set_range", %{"range" => "week"}, socket) do
     end_time = DateTime.utc_now()
     start_time = DateTime.add(end_time, -604_800, :second)
-    {:noreply, fetch_and_push_data(socket, start_time, end_time)}
+
+    {:noreply,
+     socket
+     |> assign(start_time: start_time, end_time: end_time)
+     |> fetch_and_push_data(start_time, end_time)}
   end
 
   @impl true
   def handle_event("set_range", %{"range" => "month"}, socket) do
     end_time = DateTime.utc_now()
     start_time = DateTime.add(end_time, -2_592_000, :second)
-    {:noreply, fetch_and_push_data(socket, start_time, end_time)}
+
+    {:noreply,
+     socket
+     |> assign(start_time: start_time, end_time: end_time)
+     |> fetch_and_push_data(start_time, end_time)}
   end
 
   @impl true
@@ -241,14 +269,18 @@ defmodule AngelWeb.IndexLive.Show do
          end) do
       {:ok, historical_data} ->
         forecast_points =
-          case fetch_forecast_data(graph_name) do
-            {:ok, points} ->
-              Logger.info("Successfully fetched forecast data for #{graph_name}")
-              points
+          if socket.assigns.show_forecast do
+            case fetch_forecast_data(graph_name) do
+              {:ok, points} ->
+                Logger.info("Successfully fetched forecast data for #{graph_name}")
+                points
 
-            {:error, reason} ->
-              Logger.error("Failed to fetch forecast data for #{graph_name}: #{inspect(reason)}")
-              []
+              {:error, reason} ->
+                Logger.error("Failed to fetch forecast data for #{graph_name}: #{inspect(reason)}")
+                []
+            end
+          else
+            []
           end
 
         payload = prepare_chart_payload(historical_data, forecast_points, socket.assigns.graph)
