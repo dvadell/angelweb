@@ -152,9 +152,13 @@ let ChartHook = {
       // Add the new timestamp (which is already in milliseconds) to the labels
       this.chart.data.labels.push(timestamp);
       this.chart.data.datasets[0].data.push(value); // actual
-      this.chart.data.datasets[1].data.push(null);  // forecast
-      this.chart.data.datasets[2].data.push(null);  // upper_bound
-      this.chart.data.datasets[3].data.push(null);  // lower_bound
+
+      // If forecast datasets exist, push null to them to keep them aligned
+      if (this.chart.data.datasets.length > 1) {
+        this.chart.data.datasets[1].data.push(null);  // forecast
+        this.chart.data.datasets[2].data.push(null);  // upper_bound
+        this.chart.data.datasets[3].data.push(null);  // lower_bound
+      }
       
       this.chart.update();
     }
