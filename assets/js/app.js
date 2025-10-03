@@ -34,6 +34,8 @@ let ChartHook = {
     Chart.register(zoomPlugin, annotationPlugin);
     console.log('Chart hook mounted');
     
+    this.isZoomingOrPanning = false;
+
     // Initialize event queue for when connection is lost
     this.eventQueue = [];
     
@@ -194,6 +196,9 @@ let ChartHook = {
       this.chart.destroy();
     }
 
+    const animationConfig = this.isZoomingOrPanning ? { duration: 0 } : {};
+    this.isZoomingOrPanning = false;
+
     console.log('Creating chart on element:', this.el);
     const ctx = this.el.getContext('2d');
 
@@ -257,6 +262,7 @@ let ChartHook = {
         })()
       },
       options: {
+        animation: animationConfig,
         responsive: true,
         maintainAspectRatio: false,
         interaction: {
@@ -361,6 +367,7 @@ let ChartHook = {
   },
 
   handleZoom({chart}) {
+    this.isZoomingOrPanning = true;
     const xScale = chart.scales.x;
     const visibleRange = {
       min: xScale.min,
@@ -390,6 +397,7 @@ let ChartHook = {
   },
 
   handlePan({chart}) {
+    this.isZoomingOrPanning = true;
     const xScale = chart.scales.x;
     const visibleRange = {
       min: xScale.min,
