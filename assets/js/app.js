@@ -23,7 +23,8 @@ import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
 import Chart from 'chart.js/auto';
 import zoomPlugin from 'chartjs-plugin-zoom';
-import 'chartjs-scale-timestack';
+// import 'chartjs-scale-timestack';
+import 'chartjs-adapter-luxon';
 import annotationPlugin from 'chartjs-plugin-annotation';
 
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
@@ -206,6 +207,91 @@ let ChartHook = {
     const gradient = ctx.createLinearGradient(0, 0, 0, 400);
     gradient.addColorStop(0, 'rgba(34, 197, 94, 0.5)');
     gradient.addColorStop(1, 'rgba(34, 197, 94, 0)');
+
+    console.log('Status events from backend:', data.status_events);
+    const statusAnnotations = {};
+    if (data.status_events && data.status_events.length > 0) {
+      let events = [...data.status_events];
+      if (events[0].status === 'error' && events[0].timestamp > data.dates[0]) {
+        events.unshift({ status: 'ok', timestamp: data.dates[0] });
+      }
+
+      let currentStatus = null;
+      let currentBlockStart = null;
+      let blockIndex = 0;
+
+      for (let i = 0; i < events.length; i++) {
+        const event = events[i];
+
+        if (currentStatus === null) {
+          currentStatus = event.status;
+          currentBlockStart = event.timestamp;
+        } else if (event.status !== currentStatus) {
+          if (currentStatus === 'error') {
+            statusAnnotations[`status_block_${blockIndex++}`] = {
+              type: 'box',
+              xMin: currentBlockStart,
+              xMax: event.timestamp,
+              backgroundColor: 'rgba(255, 105, 180, 0.3)',
+              borderColor: 'magenta',
+              borderWidth: 1
+            };
+          }
+          currentStatus = event.status;
+          currentBlockStart = event.timestamp;
+        }
+      }
+
+      // Handle the last block
+      if (currentStatus === 'error') {
+        statusAnnotations[`status_block_${blockIndex++}`] = {
+          type: 'box',
+          xMin: currentBlockStart,
+          xMax: data.dates[data.dates.length - 1],
+          backgroundColor: 'rgba(255, 105, 180, 0.3)',
+          borderColor: 'magenta',
+          borderWidth: 1
+        };
+      }
+    }
+    console.log('Generated status annotations:', statusAnnotations);
+
+    const finalAnnotations = {
+      ...statusAnnotations,
+      ...(typeof data.min_value === 'number' && {
+        minLine: {
+          type: 'line',
+          yMin: data.min_value,
+          yMax: data.min_value,
+          borderColor: 'rgb(255, 150, 150)',
+          borderDash: [10, 10],
+          borderWidth: 2,
+          label: {
+            content: `Min: ${data.graph_type === 'time' ? formatDuration(data.min_value) : data.min_value}`,
+            display: true,
+            backgroundColor: 'rgba(255, 150, 150, 0.3)',
+            color: '000',
+          }
+        }
+      }),
+      ...(typeof data.max_value === 'number' && {
+        maxLine: {
+          type: 'line',
+          yMin: data.max_value,
+          yMax: data.max_value,
+          borderColor: 'rgb(255, 150, 150)',
+          borderDash: [10, 10],
+          borderWidth: 2,
+          label: {
+            content: `Max: ${data.graph_type === 'time' ? formatDuration(data.max_value) : data.max_value}`,
+            display: true,
+            backgroundColor: 'rgba(255, 150, 150, 0.3)',
+            color: '000',
+          }
+        }
+      })
+    };
+    console.log('Final annotations for chart:', finalAnnotations);
     
     this.chart = new Chart(ctx, {
       type: 'line',
@@ -271,7 +357,10 @@ let ChartHook = {
         },
         scales: {
           x: {
-            type: 'timestack',
+            type: 'time',
+            time: {
+              unit: 'day'
+            },
             title: {
               display: true,
               text: 'Date'
@@ -307,40 +396,7 @@ let ChartHook = {
             }
           },
           annotation: {
-            annotations: {
-              ...(typeof data.min_value === 'number' && {
-                minLine: {
-                  type: 'line',
-                  yMin: data.min_value,
-                  yMax: data.min_value,
-                  borderColor: 'rgb(255, 150, 150)',
-                  borderDash: [10, 10],
-                  borderWidth: 2,
-                  label: {
-                    content: `Min: ${data.graph_type === 'time' ? formatDuration(data.min_value) : data.min_value}`,
-                    display: true,
-                    backgroundColor: 'rgba(255, 150, 150, 0.3)',
-                    color: '000',
-                  }
-                }
-              }),
-              ...(typeof data.max_value === 'number' && {
-                maxLine: {
-                  type: 'line',
-                  yMin: data.max_value,
-                  yMax: data.max_value,
-                  borderColor: 'rgb(255, 150, 150)',
-                  borderDash: [10, 10],
-                  borderWidth: 2,
-                  label: {
-                    content: `Max: ${data.graph_type === 'time' ? formatDuration(data.max_value) : data.max_value}`,
-                    display: true,
-                    backgroundColor: 'rgba(255, 150, 150, 0.3)',
-                    color: '000',
-                  }
-                }
-              })
-            }
+            annotations: finalAnnotations
           },
           tooltip: {
             callbacks: {

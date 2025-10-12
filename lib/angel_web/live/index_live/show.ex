@@ -332,6 +332,24 @@ defmodule AngelWeb.IndexLive.Show do
       |> Enum.uniq()
       |> Enum.sort()
 
+    status_events =
+      if Enum.any?(all_timestamps) do
+        start_date = DateTime.from_unix!(List.first(all_timestamps), :millisecond)
+
+        events_module().get_status_events_for_graph(graph.short_name, start_date)
+        |>
+        Enum.map(fn event ->
+          %{
+            timestamp: DateTime.to_unix(event.inserted_at, :millisecond),
+            status: String.split(event.text, "=") |> List.last()
+          }
+        end)
+      else
+        []
+      end
+
+    Logger.debug("Status events for chart: #{inspect(status_events)}")
+
     %{
       dates: all_timestamps,
       actual: Enum.map(all_timestamps, &Map.get(actual_map, &1)),
@@ -341,7 +359,8 @@ defmodule AngelWeb.IndexLive.Show do
       actual_label: actual_series.target,
       graph_type: graph.graph_type,
       min_value: graph.min_value,
-      max_value: graph.max_value
+      max_value: graph.max_value,
+      status_events: status_events
     }
   end
 

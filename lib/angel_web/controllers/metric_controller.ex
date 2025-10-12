@@ -16,6 +16,7 @@ defmodule AngelWeb.MetricController do
   @spec create(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def create(conn, metric_params) do
     current_timestamp = DateTime.utc_now()
+    create_event_on_status(metric_params)
 
     with {:ok, metric} <- validate_metric(metric_params),
          {:ok, graph} <- create_or_update_graph(metric, metric_params),
@@ -110,6 +111,36 @@ defmodule AngelWeb.MetricController do
       min && value < min -> {:error, "Value #{value} is below min_value #{min}"}
       max && value > max -> {:error, "Value #{value} is above max_value #{max}"}
       true -> :ok
+    end
+  end
+
+  defp create_event_on_status(metric_params) do
+    status = Map.get(metric_params, "status")
+    short_name = Map.get(metric_params, "short_name")
+
+    if status in ["ok", "error"] and short_name do
+      last_event = Events.get_last_status_event(short_name)
+      new_event_text = "status=#{status}"
+
+      if is_nil(last_event) or last_event.text != new_event_text do
+        event_params = %{
+          "for_graph" => short_name,
+          "text" => new_event_text
+        }
+
+        case Events.create_event(event_params) do
+          {:ok, _event} ->
+            :ok
+
+          {:error, changeset} ->
+            Logger.error("Failed to create event for status #{status}: #{inspect(changeset)}")
+            :ok
+        end
+      else
+        :ok
+      end
+    else
+      :ok
     end
   end
 end
