@@ -27,6 +27,7 @@ services:
     ports:
       - '11000:4000'
       - '8012:4000'
+    restart: unless-stopped
     volumes:
       - .:/app
       - /app/_build
@@ -37,6 +38,7 @@ services:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/angel
     volumes:
       - ./forecasting:/app
+    restart: unless-stopped
     depends_on:
       - db
 volumes:

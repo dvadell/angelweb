@@ -319,6 +319,9 @@ defmodule AngelWeb.IndexLive.Show do
     end
   end
 
+  # Prepares the payload for the chart, including historical data, forecast points,
+  # and status events.
+  @spec prepare_chart_payload(list(), list(), Index.t()) :: map()
   defp prepare_chart_payload(historical_data, forecast_points, graph) do
     actual_series = List.first(historical_data)
 
@@ -336,12 +339,12 @@ defmodule AngelWeb.IndexLive.Show do
       if Enum.any?(all_timestamps) do
         start_date = DateTime.from_unix!(List.first(all_timestamps), :millisecond)
 
-        events_module().get_status_events_for_graph(graph.short_name, start_date)
-        |>
-        Enum.map(fn event ->
+        raw_events = events_module().get_status_events_for_graph(graph.short_name, start_date)
+
+        Enum.map(raw_events, fn event ->
           %{
             timestamp: DateTime.to_unix(event.inserted_at, :millisecond),
-            status: String.split(event.text, "=") |> List.last()
+            status: List.last(String.split(event.text, "="))
           }
         end)
       else

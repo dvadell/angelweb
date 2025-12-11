@@ -1,5 +1,6 @@
 defmodule Angel.Events.Event do
   @moduledoc "Schema for events"
+  @type t :: %__MODULE__{}
   use Ecto.Schema
   import Ecto.Changeset
 

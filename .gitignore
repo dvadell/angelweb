@@ -39,3 +39,4 @@ npm-debug.log
 .aider*
 forecasting/__pycache__/
 forecasting/tests/__pycache__/*
+README-local.txt

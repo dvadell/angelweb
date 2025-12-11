@@ -114,33 +114,47 @@ defmodule AngelWeb.MetricController do
     end
   end
 
+  # Creates a status event if the metric has a status of "ok" or "error".
+  # It avoids creating duplicate consecutive status events.
+  @spec create_event_on_status(map()) :: :ok
   defp create_event_on_status(metric_params) do
-    status = Map.get(metric_params, "status")
-    short_name = Map.get(metric_params, "short_name")
-
-    if status in ["ok", "error"] and short_name do
-      last_event = Events.get_last_status_event(short_name)
-      new_event_text = "status=#{status}"
-
-      if is_nil(last_event) or last_event.text != new_event_text do
-        event_params = %{
-          "for_graph" => short_name,
-          "text" => new_event_text
-        }
-
-        case Events.create_event(event_params) do
-          {:ok, _event} ->
-            :ok
-
-          {:error, changeset} ->
-            Logger.error("Failed to create event for status #{status}: #{inspect(changeset)}")
-            :ok
-        end
-      else
-        :ok
-      end
+    with status when status in ["ok", "error"] <- Map.get(metric_params, "status"),
+         short_name when not is_nil(short_name) <- Map.get(metric_params, "short_name"),
+         :create_event <- should_create_event?(short_name, status) do
+      create_status_event(short_name, status)
     else
-      :ok
+      _reason -> :ok
+    end
+  end
+
+  # Checks if a new status event should be created.
+  @spec should_create_event?(String.t(), String.t()) :: :create_event | :skip
+  defp should_create_event?(short_name, status) do
+    last_event = Events.get_last_status_event(short_name)
+    new_event_text = "status=#{status}"
+
+    if is_nil(last_event) or last_event.text != new_event_text do
+      :create_event
+    else
+      :skip
+    end
+  end
+
+  # Creates a status event.
+  @spec create_status_event(String.t(), String.t()) :: :ok
+  defp create_status_event(short_name, status) do
+    event_params = %{
+      "for_graph" => short_name,
+      "text" => "status=#{status}"
+    }
+
+    case Events.create_event(event_params) do
+      {:ok, _event} ->
+        :ok
+
+      {:error, changeset} ->
+        Logger.error("Failed to create event for status #{status}: #{inspect(changeset)}")
+        :ok
     end
   end
 end

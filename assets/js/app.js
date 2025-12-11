@@ -219,6 +219,8 @@ let ChartHook = {
       let currentStatus = null;
       let currentBlockStart = null;
       let blockIndex = 0;
+      let backgroundErrorColor = 'rgba(155, 55, 130, 0.1)';
+      let backgroundErrorLabelColor = 'rgba(155, 55, 130, 0.5)';
 
       for (let i = 0; i < events.length; i++) {
         const event = events[i];
@@ -232,9 +234,15 @@ let ChartHook = {
               type: 'box',
               xMin: currentBlockStart,
               xMax: event.timestamp,
-              backgroundColor: 'rgba(255, 105, 180, 0.3)',
-              borderColor: 'magenta',
-              borderWidth: 1
+              backgroundColor: backgroundErrorColor,
+              borderWidth: 0,
+              label: {
+                display: true,
+                content: 'status: error',
+                color: backgroundErrorLabelColor,
+                font: { size: 18 },
+                position: '10%',
+              }
             };
           }
           currentStatus = event.status;
@@ -248,9 +256,13 @@ let ChartHook = {
           type: 'box',
           xMin: currentBlockStart,
           xMax: data.dates[data.dates.length - 1],
-          backgroundColor: 'rgba(255, 105, 180, 0.3)',
-          borderColor: 'magenta',
-          borderWidth: 1
+          backgroundColor: backgroundErrorColor,
+          borderWidth: 0,
+          label: {
+            display: true,
+            content: 'status: error',
+            color: backgroundErrorLabelColor,
+          }
         };
       }
     }
@@ -263,7 +275,7 @@ let ChartHook = {
           type: 'line',
           yMin: data.min_value,
           yMax: data.min_value,
-          borderColor: 'rgb(255, 150, 150)',
+          borderColor: 'rgba(255, 150, 150, 0)',
           borderDash: [10, 10],
           borderWidth: 2,
           label: {
@@ -274,6 +286,7 @@ let ChartHook = {
           }
         }
       }),
+      // Max/min line
       ...(typeof data.max_value === 'number' && {
         maxLine: {
           type: 'line',

@@ -38,12 +38,16 @@ defmodule Angel.Events do
   """
   def get_event!(id), do: Repo.get!(Event, id)
 
+  @doc """
+  Gets the last status event for a given graph.
+  """
+  @spec get_last_status_event(String.t()) :: Event.t() | nil
   def get_last_status_event(graph_short_name) do
-    from(e in Event,
-      where: e.for_graph == ^graph_short_name and like(e.text, "status=%"),
-      order_by: [desc: e.inserted_at],
-      limit: 1
-    )
+    Event
+    |> where(for_graph: ^graph_short_name)
+    |> where([e], like(e.text, "status=%"))
+    |> order_by(desc: :inserted_at)
+    |> limit(1)
     |> Repo.one()
   end
 
@@ -56,11 +60,15 @@ defmodule Angel.Events do
     )
   end
 
+  @doc """
+  Gets all status events for a given graph from a given start date.
+  """
+  @spec get_status_events_for_graph(String.t(), DateTime.t()) :: [Event.t()]
   def get_status_events_for_graph(graph_short_name, start_date) do
-    from(e in Event,
-      where: e.for_graph == ^graph_short_name and like(e.text, "status=%") and e.inserted_at >= ^start_date,
-      order_by: e.inserted_at
-    )
+    Event
+    |> where(for_graph: ^graph_short_name)
+    |> where([e], like(e.text, "status=%") and e.inserted_at >= ^start_date)
+    |> order_by([e], e.inserted_at)
     |> Repo.all()
   end
 
