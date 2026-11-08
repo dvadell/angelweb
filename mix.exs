@@ -78,7 +78,7 @@ defmodule Angel.MixProject do
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       "assets.setup": [
-        "cmd cd assets && npm install",
+        "cmd --cd assets npm install",
         "tailwind.install --if-missing",
         "esbuild.install --if-missing"
       ],

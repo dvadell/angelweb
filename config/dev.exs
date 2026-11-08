@@ -2,13 +2,12 @@ import Config
 
 # Configure your database
 config :angel, Angel.Repo,
-  url: System.get_env("DATABASE_URL"),
-  stacktrace: true,
+  url: System.get_env("DATABASE_URL") || "postgres://postgres:postgres@localhost:15432/angel",
   show_sensitive_data_on_connection_error: true,
   pool_size: 10
 
 config :angel, Angel.NonTransactionalRepo,
-  url: System.get_env("DATABASE_URL"),
+  url: System.get_env("DATABASE_URL") || "postgres://postgres:postgres@localhost:15432/angel",
   pool_size: 10
 
 # For development, we disable any cache and enable
