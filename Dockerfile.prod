@@ -1,0 +1,81 @@
+# Production image: builds a Mix release in a builder stage and copies it
+# into a slim runtime image. This is the image published by CI
+# (.github/workflows/ci.yml). The plain `Dockerfile` is the development
+# image used by docker-compose.
+#
+# Build:  docker build -f Dockerfile.prod -t angel .
+# Run:    docker run -p 4000:4000 \
+#           -e DATABASE_URL=ecto://postgres:postgres@db/angel \
+#           -e SECRET_KEY_BASE=$(mix phx.gen.secret) \
+#           -e PHX_HOST=localhost -e FRONTEND_URL=http://localhost:4000 \
+#           angel
+#
+# Keep these in sync with .tool-versions.
+ARG ELIXIR_VERSION=1.20.2
+ARG OTP_VERSION=29.0.4
+ARG DEBIAN_VERSION=trixie-20260713-slim
+
+ARG BUILDER_IMAGE="hexpm/elixir:${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${DEBIAN_VERSION}"
+ARG RUNNER_IMAGE="debian:${DEBIAN_VERSION}"
+
+FROM ${BUILDER_IMAGE} AS builder
+
+RUN apt-get update -y \
+    && apt-get install -y build-essential git nodejs npm \
+    && apt-get clean && rm -f /var/lib/apt/lists/*_*
+
+WORKDIR /app
+
+RUN mix local.hex --force && mix local.rebar --force
+
+ENV MIX_ENV="prod"
+
+COPY mix.exs mix.lock ./
+RUN mix deps.get --only $MIX_ENV
+RUN mkdir config
+
+# Copy compile-time config before compiling deps so that config changes
+# trigger a recompile of the dependencies.
+COPY config/config.exs config/${MIX_ENV}.exs config/
+RUN mix deps.compile
+
+COPY priv priv
+COPY lib lib
+COPY assets assets
+
+RUN mix assets.setup
+RUN mix assets.deploy
+
+RUN mix compile
+
+# runtime.exs is read when the release boots, so it doesn't need a recompile.
+COPY config/runtime.exs config/
+
+RUN mix release
+
+FROM ${RUNNER_IMAGE}
+
+RUN apt-get update -y \
+    && apt-get install -y libstdc++6 openssl libncurses6 locales ca-certificates \
+    && apt-get clean && rm -f /var/lib/apt/lists/*_*
+
+RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && locale-gen
+
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US:en
+ENV LC_ALL=en_US.UTF-8
+
+WORKDIR /app
+RUN chown nobody /app
+
+ENV MIX_ENV="prod"
+ENV PHX_SERVER="true"
+
+COPY --from=builder --chown=nobody:root /app/_build/${MIX_ENV}/rel/angel ./
+
+USER nobody
+
+EXPOSE 4000
+
+# Run migrations and then start the server, like the dev image does.
+CMD ["/bin/sh", "-c", "/app/bin/angel eval Angel.Release.migrate && exec /app/bin/angel start"]
