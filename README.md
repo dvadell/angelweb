@@ -27,6 +27,28 @@ mix sobelow --skip
 MIX_ENV=test mix test
 ```
 
+## CI/CD
+
+`.github/workflows/ci.yml` runs on every push and pull request to `main`:
+
+* **Lint**: `mix format --check-formatted`, `mix credo`, `mix dialyzer`, `mix sobelow --skip`
+* **Test**: `mix test` against a TimescaleDB service container
+* **Docker** (pushes to `main` only, after lint and tests pass): builds `Dockerfile.prod`
+  and pushes it to `ghcr.io/dvadell/angelweb`, tagged `latest` and `sha-<commit>`.
+
+`Dockerfile.prod` builds a Mix release. The container runs the migrations on start. To run it:
+
+```
+docker run -p 4000:4000 \
+  -e DATABASE_URL=ecto://postgres:postgres@db/angel \
+  -e SECRET_KEY_BASE=<mix phx.gen.secret> \
+  -e PHX_HOST=localhost \
+  -e FRONTEND_URL=http://localhost:4000 \
+  ghcr.io/dvadell/angelweb:latest
+```
+
+The plain `Dockerfile` is the development image used by `docker compose`.
+
 ## Web Interface
 
 ### `GET /graphs`

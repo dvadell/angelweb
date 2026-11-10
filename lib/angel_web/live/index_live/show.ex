@@ -184,22 +184,18 @@ defmodule AngelWeb.IndexLive.Show do
         %{"start_time" => start_time_str, "end_time" => end_time_str},
         socket
       ) do
-    with {:ok, start_time, _utc_offset} <- DateTime.from_iso8601(start_time_str),
-         {:ok, end_time, _utc_offset} <- DateTime.from_iso8601(end_time_str) do
-      graph_name = socket.assigns.graph_name
+    graph_name = socket.assigns.graph_name
 
-      case junior_module().trace("angel_graphs_fetch_timescaledb_data", fn ->
+    with {:ok, start_time, _utc_offset} <- DateTime.from_iso8601(start_time_str),
+         {:ok, end_time, _utc_offset} <- DateTime.from_iso8601(end_time_str),
+         {:ok, new_data} <-
+           junior_module().trace("angel_graphs_fetch_timescaledb_data", fn ->
              graphs_module().fetch_timescaledb_data(graph_name, start_time, end_time)
            end) do
-        {:ok, new_data} ->
-          graph = socket.assigns.graph
+      graph = socket.assigns.graph
 
-          payload = prepare_chart_payload(new_data, socket.assigns.forecast_points, graph)
-          {:noreply, push_event(socket, "chart:data_loaded", %{data: payload})}
-
-        {:error, _e} ->
-          {:noreply, socket}
-      end
+      payload = prepare_chart_payload(new_data, socket.assigns.forecast_points, graph)
+      {:noreply, push_event(socket, "chart:data_loaded", %{data: payload})}
     else
       _error ->
         {:noreply, socket}
