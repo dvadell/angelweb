@@ -29,7 +29,7 @@ config :angel, AngelWeb.Endpoint,
   ],
   pubsub_server: Angel.PubSub,
   live_view: [signing_salt: "9sNOeGFZ"],
-  check_origin: frontend_url
+  check_origin: false
 
 # Configures the mailer
 #
