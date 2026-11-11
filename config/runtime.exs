@@ -56,7 +56,7 @@ if config_env() == :prod do
   # config.exs reads FRONTEND_URL at compile time, which in a release means
   # at image build time. Read it again at boot so the image can be configured.
   if frontend_url = System.get_env("FRONTEND_URL") do
-    config :angel, AngelWeb.Endpoint, check_origin: frontend_url
+    config :angel, AngelWeb.Endpoint, check_origin: ["angel.of.ardor.link", "angel.io.ardor.link"]
   end
 
   config :angel, AngelWeb.Endpoint,
