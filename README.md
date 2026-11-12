@@ -52,6 +52,15 @@ docker run -p 4000:4000 \
 
 The plain `Dockerfile` is the development image used by `docker compose`.
 
+To run the published images with Docker Compose instead, use `docker-compose.prod.yml`:
+
+```
+docker compose -f docker-compose.prod.yml up -d
+```
+
+Its `migrate` service creates the database and runs the migrations with
+`bin/angel eval Angel.Release.migrate`, because the release image doesn't include `mix`.
+
 ## Web Interface
 
 ### `GET /graphs`

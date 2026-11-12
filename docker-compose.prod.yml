@@ -1,0 +1,60 @@
+# Runs the images that CI publishes to ghcr.io, instead of building from
+# source like docker-compose.yml does.
+#
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# Needs a .env with at least DATABASE_URL and SECRET_KEY_BASE (see .env-sample).
+services:
+  db:
+    environment:
+      PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_HOST_AUTH_METHOD: trust
+    image: 'timescale/timescaledb:latest-pg17'
+    restart: unless-stopped
+    ports:
+      - '15432:5432'
+    volumes:
+      - 'timescaledb:/var/lib/postgresql/data'
+    healthcheck:
+      # -h 127.0.0.1 so it doesn't pass while the image's init scripts run
+      # against a temporary server that only listens on the unix socket.
+      test: ['CMD', 'pg_isready', '-U', 'postgres', '-h', '127.0.0.1']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  # Creates the database and runs the migrations, then exits. The release
+  # has no mix, so this uses Angel.Release instead of mix ecto.migrate.
+  # To run it again: docker compose -f docker-compose.prod.yml run --rm migrate
+  migrate:
+    image: 'ghcr.io/dvadell/angelweb:latest'
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    command: ['/app/bin/angel', 'eval', 'Angel.Release.migrate']
+  web:
+    image: 'ghcr.io/dvadell/angelweb:latest'
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    ports:
+      - '11000:4000'
+      - '8012:4000'
+    # The image's default command also migrates; migrate has done that already.
+    command: ['/app/bin/angel', 'start']
+  forecasting:
+    image: 'ghcr.io/dvadell/angelweb-forecasting:latest'
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/angel
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+volumes:
+  timescaledb:
