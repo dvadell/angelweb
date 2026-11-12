@@ -53,9 +53,8 @@ if config_env() == :prod do
 
   config :angel, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
-  # config.exs reads FRONTEND_URL at compile time, which in a release means
-  # at image build time. Read it again at boot so the image can be configured.
-  if frontend_url = System.get_env("FRONTEND_URL") do
+  # Only check the websocket origin when FRONTEND_URL is set.
+  if System.get_env("FRONTEND_URL") do
     config :angel, AngelWeb.Endpoint, check_origin: ["angel.of.ardor.link", "angel.io.ardor.link"]
   end
 

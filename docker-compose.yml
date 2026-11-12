@@ -12,14 +12,40 @@ services:
       - '15432:5432'
     volumes:
       - 'timescaledb:/var/lib/postgresql/data'
-  # To debug, run: 
+    healthcheck:
+      # -h 127.0.0.1 so it doesn't pass while the image's init scripts run
+      # against a temporary server that only listens on the unix socket.
+      test: ['CMD', 'pg_isready', '-U', 'postgres', '-h', '127.0.0.1']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  # Creates the database and runs the migrations, then exits. web and
+  # forecasting wait for it to finish. It also fetches and compiles the deps
+  # into the volumes it shares with web.
+  # To run it again: docker compose run --rm migrate
+  migrate:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      MIX_ENV: ${ENV}
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+      - 'mix_build:/app/_build'
+      - 'mix_deps:/app/deps'
+    command: sh -c "mix deps.get && mix ecto.create -r Angel.Repo && mix ecto.migrate -r Angel.Repo"
+  # To debug, run:
   #   docker compose down web
   #   docker compose run --service-ports web /bin/bash
   #   iex --dbg pry -S mix phx.server
   web:
     build: .
     depends_on:
-      - db
+      migrate:
+        condition: service_completed_successfully
     environment:
       MIX_ENV: ${ENV}
     env_file:
@@ -29,8 +55,9 @@ services:
       - '8012:4000'
     volumes:
       - .:/app
-      - /app/_build
-      - /app/deps
+      - 'mix_build:/app/_build'
+      - 'mix_deps:/app/deps'
+    command: sh -c "mix assets.setup && mix phx.server"
   forecasting:
     build: ./forecasting
     environment:
@@ -38,8 +65,10 @@ services:
     volumes:
       - ./forecasting:/app
     depends_on:
-      - db
+      migrate:
+        condition: service_completed_successfully
 volumes:
   pgdata:
   timescaledb:
-
+  mix_build:
+  mix_deps:
