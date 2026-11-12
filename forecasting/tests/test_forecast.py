@@ -23,7 +23,13 @@ def test_forecast_metric_success(mock_fetch_data, mock_get_metrics, mock_to_thre
     original_df['ds'] = pd.to_datetime(original_df['ds'])
 
     # Create a dummy forecast dataframe to be returned by the mock.
-    historical_forecast_df = pd.DataFrame({'ds': original_df['ds'], 'yhat': original_df['y'] * 0.95})
+    # Like Prophet's output, historical rows have confidence bounds too.
+    historical_forecast_df = pd.DataFrame({
+        'ds': original_df['ds'],
+        'yhat': original_df['y'] * 0.95,
+        'yhat_lower': original_df['y'] * 0.85,
+        'yhat_upper': original_df['y'] * 1.05,
+    })
     
     last_timestamp = original_df['ds'].max()
     future_dates = [last_timestamp + timedelta(hours=i) for i in range(1, 25)]
@@ -45,10 +51,11 @@ def test_forecast_metric_success(mock_fetch_data, mock_get_metrics, mock_to_thre
     assert response.status_code == 200
     data = response.json()
     assert data["metric"] == test_metric
-    assert len(data["forecast_points"]) == 24
+    # 24 fitted historical points followed by the 24 future points.
+    assert len(data["forecast_points"]) == 48
     assert data["model_accuracy"] > 0.8
-    
-    point = data["forecast_points"][0]
+
+    point = data["forecast_points"][24]
     assert point["predicted_value"] == 100.0
 
 @patch("main._get_available_metrics_from_db", new_callable=AsyncMock)
@@ -145,7 +152,8 @@ def test_forecast_with_custom_parameters(mock_fetch_data, mock_get_metrics, mock
     assert mock_to_thread.call_args.args[3] == custom_confidence
     
     data = response.json()
-    assert len(data["forecast_points"]) == custom_hours
+    # The response includes the last hours_ahead fitted points before the future ones.
+    assert len(data["forecast_points"]) == custom_hours * 2
 
 @patch("main.asyncio.to_thread")
 @patch("main.fetch_metric_data", new_callable=AsyncMock)

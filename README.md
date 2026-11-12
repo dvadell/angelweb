@@ -35,6 +35,9 @@ MIX_ENV=test mix test
 * **Test**: `mix test` against a TimescaleDB service container
 * **Docker** (pushes to `main` only, after lint and tests pass): builds `Dockerfile.prod`
   and pushes it to `ghcr.io/dvadell/angelweb`, tagged `latest` and `sha-<commit>`.
+* **Forecasting**: builds `forecasting/Dockerfile`, runs `pytest` inside the image against
+  TimescaleDB, and on pushes to `main` pushes it to `ghcr.io/dvadell/angelweb-forecasting`
+  with the same tags.
 
 `Dockerfile.prod` builds a Mix release. The container runs the migrations on start. To run it:
 
