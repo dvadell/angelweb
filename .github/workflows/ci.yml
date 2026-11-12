@@ -124,6 +124,12 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Trigger Coolify deployment
+        run: |
+          curl --fail --request POST \
+            '${{ secrets.COOLIFY_WEBHOOK }}' \
+            --header 'Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}'
+
   # The forecasting service (forecasting/). Its tests run inside the image,
   # as in forecasting/README.md, and the same image is pushed on main.
   forecasting:
