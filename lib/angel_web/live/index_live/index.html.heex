@@ -1,49 +1,54 @@
-<h1>Graphs List</h1>
+<section class="graphs-card">
+  <h1 class="graphs-card__welcome">Welcome Guest!</h1>
 
-<.form for={%{}} phx-change="filter" phx-debounce="300">
-  <.input type="text" name="q" placeholder="Filter graphs..." value={@filter} />
-</.form>
+  <div class="graphs-card__content">
+    <div class="graphs-card__header">
+      <h2 class="graphs-card__title">Recent Graphs</h2>
+      <.form for={%{}} phx-change="filter" phx-debounce="300" class="graphs-search">
+        <input
+          type="text"
+          name="q"
+          class="graphs-search__input"
+          placeholder="Filter graphs..."
+          aria-label="Filter graphs"
+          autocomplete="off"
+          value={@filter}
+        />
+      </.form>
+    </div>
 
-<ul>
-  <%= Enum.map(@filtered_graphs, fn g -> %>
-    <li>
-      <a href={"/graphs/#{g.short_name}"}>
-        <span>
-          <%= if g.status == :ok do %>
-            ✅
-          <% end %>
-          <%= if g.status == :not_ok do %>
-            ❌
-          <% end %>
-          <%= if g.status == :no_data do %>
-            ❓
-          <% end %>
-          {g.short_name}
-        </span>
-        <.sparkline values={g.sparkline} class="sparkline" />
-      </a>
-    </li>
-  <% end) %>
-</ul>
+    <div class="graphs-table">
+      <div class="graphs-table__head" aria-hidden="true">
+        <div class="graphs-table__cols">
+          <span class="graphs-table__status">Status</span>
+          <span>Name</span>
+        </div>
+        <span>Preview</span>
+      </div>
 
-<style>
-  ul {
-    list-style: none;
-    padding: 0;
-  }
-
-  li {
-    border-bottom: 1px solid #ccc;
-    padding: 1rem 0;
-  }
-
-  li a {
-    text-decoration: none;
-    color: #333;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-  }
-</style>
+      <ul class="graphs-table__list">
+        <%= Enum.map(@filtered_graphs, fn g -> %>
+          <li>
+            <a href={"/graphs/#{g.short_name}"} class="graph-row">
+              <span class="graphs-table__cols">
+                <span class="graphs-table__status">
+                  <%= case g.status do %>
+                    <% :ok -> %>
+                      <img src={~p"/images/graphs/status-ok.svg"} width="30" height="30" alt="OK" />
+                    <% :not_ok -> %>
+                      <img src={~p"/images/graphs/status-error.svg"} width="30" height="30" alt="Not OK" />
+                    <% :no_data -> %>
+                      <img src={~p"/images/graphs/status-unknown.svg"} width="16.5645" height="26" alt="No data" />
+                    <% _ -> %>
+                  <% end %>
+                </span>
+                <span class="graph-row__name">{g.short_name}</span>
+              </span>
+              <.sparkline values={g.sparkline} width="73" height="30" class="graph-row__preview" />
+            </a>
+          </li>
+        <% end) %>
+      </ul>
+    </div>
+  </div>
+</section>

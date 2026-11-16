@@ -1,0 +1,65 @@
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600&family=Poppins:wght@500&display=swap"
+/>
+
+<div class="graphs-page">
+  <div class="graphs-page__body">
+    <aside class="sidebar">
+      <div class="sidebar__top">
+        <a href={~p"/graphs"} class="sidebar__brand">
+          <span class="sidebar__badge" aria-hidden="true">A</span>
+          <span class="sidebar__brand-name">Angel</span>
+        </a>
+
+        <nav class="sidebar__nav" aria-label="Main">
+          <a href={~p"/"} class="nav-item">
+            <span class="nav-item__icon">
+              <img src={~p"/images/graphs/icon-home.svg"} width="24.2857" height="21.7143" alt="" />
+            </span>
+            <span class="nav-item__label">Home</span>
+          </a>
+          <span class="nav-item nav-item--disabled" aria-disabled="true">
+            <span class="nav-item__icon">
+              <img src={~p"/images/graphs/icon-last-events.svg"} width="24.29" height="24.29" alt="" />
+            </span>
+            <span class="nav-item__label nav-item__label--lg">Last events</span>
+          </span>
+        </nav>
+      </div>
+
+      <div class="sidebar__user">
+        <div class="sidebar__user-info">
+          <img
+            class="sidebar__avatar"
+            src={~p"/images/graphs/avatar-penguin.png"}
+            width="45"
+            height="45"
+            alt=""
+          />
+          <span class="sidebar__user-name">Guest</span>
+        </div>
+        <span class="sidebar__logout" aria-hidden="true">
+          <img src={~p"/images/graphs/icon-logout.svg"} width="23.049" height="23.6585" alt="" />
+        </span>
+      </div>
+    </aside>
+
+    <main class="graphs-page__main">
+      <.flash_group flash={@flash} />
+      {@inner_content}
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <div class="site-footer__text">
+      <p>All rights are reserved &copy; Angel Web</p>
+      <p>Page made by Antervel LLC</p>
+      <p>
+        &ldquo;<a href="https://www.streamlinehq.com/icons" target="_blank" rel="noopener">Free icons from Streamline</a>&rdquo;
+      </p>
+    </div>
+  </footer>
+</div>

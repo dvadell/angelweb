@@ -28,7 +28,7 @@ defmodule AngelWeb.IndexLiveTest do
 
       {:ok, _index_live, html} = live(conn, ~p"/graphs")
 
-      assert html =~ "Graphs List"
+      assert html =~ "Recent Graphs"
       assert html =~ "my_graph"
       assert html =~ "<svg"
       assert html =~ "<polyline"

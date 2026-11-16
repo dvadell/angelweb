@@ -1,0 +1,477 @@
+/* Graphs dashboard (/graphs) — implemented from Figma "Angel web vers." frame 2128:193.
+   Every rule is scoped under .graphs-page so other pages are unaffected. */
+
+.graphs-page {
+  /* Design tokens (Figma variables) */
+  --strong-green: #32a537;
+  --stroke-green: #60815b;
+  --light-green: #dbfddd;
+  --highlight: #77f27d;
+  --dark-green: #0b4c3f;
+  --title-color: #011a02;
+  --inactive-text: #4c504c;
+  --page-bg: #fafaf6;
+  --surface: #ffffff;
+  --radius-card: 15px;
+  --radius-input: 10px;
+  --font-main: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  --font-badge: "Poppins", ui-sans-serif, system-ui, sans-serif;
+
+  --page-pad-y: 96px;
+  --page-pad-x: 80px;
+  --col-gap: 50px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 96px;
+  min-height: 100vh;
+  padding: var(--page-pad-y) var(--page-pad-x);
+  background: var(--page-bg);
+  color: var(--title-color);
+  font-family: var(--font-main);
+  font-weight: 500;
+  line-height: normal;
+}
+
+.graphs-page a:focus-visible,
+.graphs-page input:focus-visible {
+  outline: 2px solid var(--strong-green);
+  outline-offset: 2px;
+}
+
+.graphs-page__body {
+  display: flex;
+  align-items: stretch;
+  gap: 32px;
+}
+
+.graphs-page__main {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* ---------- Sidebar ---------- */
+
+.graphs-page .sidebar {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 32px;
+  flex-shrink: 0;
+  width: 228px;
+  max-height: 1024px;
+  padding: 32px 16px;
+  background: var(--surface);
+  border: 1px solid var(--stroke-green);
+  border-radius: var(--radius-card);
+}
+
+.graphs-page .sidebar__top {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.graphs-page .sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: inherit;
+  text-decoration: none;
+  border-radius: var(--radius-card);
+}
+
+.graphs-page .sidebar__badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 54px;
+  height: 54px;
+  background: var(--strong-green);
+  border-radius: var(--radius-card);
+  filter: drop-shadow(0 4px 2px rgba(0, 0, 0, 0.25));
+  color: #fff;
+  font-family: var(--font-badge);
+  font-size: 35px;
+  font-weight: 500;
+}
+
+.graphs-page .sidebar__brand-name {
+  font-size: 32px;
+  font-weight: 600;
+}
+
+.graphs-page .sidebar__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.graphs-page .nav-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 196px;
+  padding: 10px 16px;
+  background: var(--surface);
+  border-radius: var(--radius-card);
+  color: var(--title-color);
+  text-decoration: none;
+}
+
+.graphs-page .nav-item--disabled {
+  cursor: default;
+}
+
+.graphs-page .nav-item__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+}
+
+.graphs-page .nav-item__label {
+  font-size: 16px;
+  white-space: nowrap;
+}
+
+.graphs-page .nav-item__label--lg {
+  font-size: 18px;
+}
+
+.graphs-page .sidebar__user {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 196px;
+}
+
+.graphs-page .sidebar__user-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.graphs-page .sidebar__avatar {
+  width: 45px;
+  height: 45px;
+  object-fit: cover;
+}
+
+.graphs-page .sidebar__user-name {
+  font-size: 14px;
+}
+
+.graphs-page .sidebar__logout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+/* ---------- Main card ---------- */
+
+.graphs-page .graphs-card {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  padding: 32px;
+  background: var(--surface);
+  border: 1px solid var(--stroke-green);
+  border-radius: var(--radius-card);
+}
+
+.graphs-page .graphs-card__welcome {
+  margin: 0;
+  text-align: center;
+  font-size: 34px;
+  font-weight: 600;
+}
+
+.graphs-page .graphs-card__content {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.graphs-page .graphs-card__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.graphs-page .graphs-card__title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.graphs-page .graphs-search {
+  width: 356.5px;
+  max-width: 100%;
+}
+
+.graphs-page .graphs-search__input {
+  display: block;
+  width: 100%;
+  height: 42px;
+  padding: 0 16px;
+  background: var(--surface);
+  border: 1.5px solid var(--strong-green);
+  border-radius: var(--radius-input);
+  box-shadow: none;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25));
+  color: var(--title-color);
+  font-family: var(--font-main);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.graphs-page .graphs-search__input::placeholder {
+  color: var(--inactive-text);
+  opacity: 1;
+}
+
+/* Overrides the @tailwindcss/forms focus ring so only the design border shows */
+.graphs-page .graphs-search__input:focus {
+  border-color: var(--strong-green);
+  box-shadow: none;
+}
+
+/* ---------- Graphs table ---------- */
+
+.graphs-page .graphs-table {
+  border: 1px solid var(--stroke-green);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+
+.graphs-page .graphs-table__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 16px;
+  background: var(--light-green);
+  border-bottom: 1px solid var(--stroke-green);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  position: relative;
+  color: #000;
+  font-size: 18px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.graphs-page .graphs-table__cols {
+  display: flex;
+  align-items: center;
+  gap: var(--col-gap);
+  min-width: 0;
+}
+
+.graphs-page .graphs-table__status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 60px;
+  height: 30px;
+}
+
+.graphs-page .graphs-table__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.graphs-page .graphs-table__list li + li {
+  border-top: 1px solid var(--stroke-green);
+}
+
+.graphs-page .graph-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  color: var(--inactive-text);
+  text-decoration: none;
+}
+
+.graphs-page .graph-row:focus-visible {
+  outline-offset: -3px;
+}
+
+.graphs-page .graph-row__name {
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+
+.graphs-page .graph-row__preview {
+  flex-shrink: 0;
+  stroke: var(--inactive-text);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+/* ---------- Footer ---------- */
+
+.graphs-page .site-footer {
+  padding: 0 80px;
+}
+
+.graphs-page .site-footer__text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding-top: 48px;
+  border-top: 1px solid var(--stroke-green);
+  font-size: 14px;
+  text-align: center;
+}
+
+.graphs-page .site-footer__text p {
+  margin: 0;
+}
+
+.graphs-page .site-footer a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+/* ---------- Responsive ---------- */
+
+/* Tablet */
+@media (max-width: 1199px) {
+  .graphs-page {
+    --page-pad-y: 48px;
+    --page-pad-x: 32px;
+    --col-gap: 32px;
+    gap: 64px;
+  }
+
+  .graphs-page__body {
+    gap: 24px;
+  }
+
+  .graphs-page .sidebar {
+    width: 200px;
+  }
+
+  .graphs-page .nav-item,
+  .graphs-page .sidebar__user {
+    width: 100%;
+  }
+
+  .graphs-page .graphs-search {
+    width: 280px;
+  }
+
+  .graphs-page .site-footer {
+    padding: 0 32px;
+  }
+}
+
+/* Mobile and narrow tablet (stacked layout) */
+@media (max-width: 899px) {
+  .graphs-page {
+    --page-pad-y: 16px;
+    --page-pad-x: 16px;
+    --col-gap: 16px;
+    gap: 48px;
+  }
+
+  .graphs-page__body {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .graphs-page .sidebar {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    width: 100%;
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .graphs-page .sidebar__top {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .graphs-page .sidebar__badge {
+    width: 44px;
+    height: 44px;
+    font-size: 28px;
+  }
+
+  .graphs-page .sidebar__brand-name {
+    font-size: 26px;
+  }
+
+  .graphs-page .sidebar__nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .graphs-page .nav-item {
+    width: auto;
+    padding: 8px 12px;
+    gap: 8px;
+  }
+
+  .graphs-page .sidebar__user {
+    width: auto;
+    gap: 16px;
+    margin-left: auto;
+  }
+
+  .graphs-page .graphs-card {
+    padding: 16px;
+    gap: 24px;
+  }
+
+  .graphs-page .graphs-card__welcome {
+    font-size: 26px;
+  }
+
+  .graphs-page .graphs-card__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .graphs-page .graphs-card__title {
+    font-size: 22px;
+  }
+
+  .graphs-page .graphs-search {
+    width: 100%;
+  }
+
+  .graphs-page .graphs-table__head {
+    font-size: 16px;
+  }
+
+  .graphs-page .graph-row {
+    padding: 12px;
+  }
+
+  .graphs-page .graph-row__name {
+    font-size: 14px;
+  }
+
+  .graphs-page .site-footer {
+    padding: 0;
+  }
+}

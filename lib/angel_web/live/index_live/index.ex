@@ -10,7 +10,7 @@ defmodule AngelWeb.IndexLive.Index do
      socket
      |> assign(:graphs, graphs)
      |> assign(:filtered_graphs, graphs)
-     |> assign(:filter, nil)}
+     |> assign(:filter, nil), layout: {AngelWeb.Layouts, :dashboard}}
   end
 
   @impl true
