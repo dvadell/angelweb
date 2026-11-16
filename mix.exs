@@ -77,6 +77,8 @@ defmodule Angel.MixProject do
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
+      # Same checks as CI; the tests run in a separate mix process with MIX_ENV=test
+      precommit: ["format", "credo", "dialyzer", "cmd env MIX_ENV=test mix test"],
       "assets.setup": [
         "cmd --cd assets npm install",
         "tailwind.install --if-missing",

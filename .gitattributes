@@ -1,2 +1,4 @@
-# Shell scripts run inside Linux containers
+# Keep LF line endings in the working copy on every OS: the project is built,
+# formatted and linted inside Linux containers (credo flags CRLF files).
+* text=auto eol=lf
 *.sh text eol=lf

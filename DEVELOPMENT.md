@@ -32,6 +32,7 @@ docker compose -f docker-compose.dev.yml exec dev bash
 From that shell:
 
 ```sh
+mix precommit            # format, credo, dialyzer and the tests: run before committing
 mix test                 # the test database is on localhost:5432, as config/test.exs expects
 iex -S mix               # console (Phoenix is already running in the main process)
 psql postgres://postgres:postgres@localhost:5432/angel
