@@ -1,0 +1,62 @@
+# Development environment. See DEVELOPMENT.md.
+#
+#   docker compose -f docker-compose.dev.yml up --build   # app on http://localhost:4000
+#   docker compose -f docker-compose.dev.yml exec dev bash
+name: angel-dev
+
+services:
+  db:
+    image: 'timescale/timescaledb:latest-pg17'
+    environment:
+      PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+    # dev shares this container's network, so its published ports live here
+    ports:
+      - '4000:4000'
+    volumes:
+      - 'timescaledb:/var/lib/postgresql/data'
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'postgres', '-h', '127.0.0.1']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Shares the db network namespace so the database is on localhost:5432,
+  # which is what config/test.exs expects; `mix test` works unchanged.
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    network_mode: 'service:db'
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/angel
+      CLAUDE_CONFIG_DIR: /home/dev/.claude
+    volumes:
+      - .:/app
+      - 'mix_build:/app/_build'
+      - 'mix_deps:/app/deps'
+      - 'node_modules:/app/assets/node_modules'
+      - 'claude_config:/home/dev/.claude'
+    stdin_open: true
+    tty: true
+
+  forecasting:
+    build: ./forecasting
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/angel
+    volumes:
+      - ./forecasting:/app
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  timescaledb:
+  mix_build:
+  mix_deps:
+  node_modules:
+  claude_config:

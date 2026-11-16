@@ -1,0 +1,62 @@
+# Development image: the toolchain from .tool-versions (via asdf), git and
+# Claude Code. The source code is not copied in; it is bind-mounted at /app by
+# docker-compose.dev.yml. See DEVELOPMENT.md.
+FROM ubuntu:24.04
+
+ARG ASDF_VERSION=v0.18.0
+ARG TARGETARCH
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    ASDF_DATA_DIR=/opt/asdf \
+    KERL_BUILD_DOCS=no \
+    KERL_CONFIGURE_OPTIONS="--disable-debug --without-javac --without-wx --without-odbc"
+ENV PATH=/home/dev/.local/bin:${ASDF_DATA_DIR}/shims:${PATH}
+
+# Erlang build dependencies, Phoenix live-reload (inotify-tools), and dev tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      build-essential autoconf m4 libncurses-dev libssl-dev \
+      ca-certificates curl wget git unzip openssh-client gnupg \
+      inotify-tools postgresql-client \
+      sudo less vim nano procps ripgrep jq \
+    && rm -rf /var/lib/apt/lists/*
+
+# Non-root user (Claude Code and Phoenix both run as this user)
+RUN userdel -r ubuntu 2>/dev/null || true \
+    && useradd --create-home --shell /bin/bash --uid 1000 dev \
+    && echo "dev ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/dev
+
+# asdf (Go binary, v0.16+)
+RUN curl -fsSL "https://github.com/asdf-vm/asdf/releases/download/${ASDF_VERSION}/asdf-${ASDF_VERSION}-linux-${TARGETARCH:-amd64}.tar.gz" \
+      | tar -xz -C /usr/local/bin asdf \
+    && mkdir -p ${ASDF_DATA_DIR} && chown dev:dev ${ASDF_DATA_DIR}
+
+USER dev
+WORKDIR /home/dev
+
+# Toolchain pinned by the repo's .tool-versions. Erlang compiles from
+# source, so this layer takes a while on the first build.
+COPY --chown=dev:dev .tool-versions /home/dev/.tool-versions
+RUN asdf plugin add erlang \
+    && asdf plugin add elixir \
+    && asdf plugin add nodejs \
+    && asdf install \
+    && mix local.hex --force \
+    && mix local.rebar --force
+
+# Claude Code (native installer, goes to ~/.local/bin)
+RUN curl -fsSL https://claude.ai/install.sh | bash
+
+# Mount points for the named volumes, owned by dev
+RUN sudo mkdir -p /app/deps /app/_build /app/assets/node_modules \
+    && sudo chown -R dev:dev /app \
+    && mkdir -p /home/dev/.claude
+
+# Strip CRs in case the script was checked out with Windows line endings
+COPY --chmod=755 docker/dev-start.sh /usr/local/bin/dev-start
+RUN sudo sed -i 's/\r$//' /usr/local/bin/dev-start
+
+WORKDIR /app
+EXPOSE 4000
+CMD ["dev-start"]
